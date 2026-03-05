@@ -1,0 +1,78 @@
+cabal-version: 2.2
+
+name:           bk
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/heades/bk#readme>
+homepage:       https://github.com/heades/bk#readme
+bug-reports:    https://github.com/heades/bk/issues
+author:         Harley Eades III
+maintainer:     harley.eades@wbee.fit
+copyright:      BSD-3-Clause
+license:        BSD-3-Clause
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/heades/bk
+
+common extensions
+  default-extensions:
+    InstanceSigs
+    DeriveGeneric
+
+library
+  import: extensions
+  exposed-modules:
+      TUI
+      BK
+  other-modules:
+      Paths_bk
+  autogen-modules:
+      Paths_bk
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+    , base >=4.7 && <5
+    , cassava >=0.5
+    , cmdargs >=0.10.22
+    , text >= 2.1 && <3
+    , wbee-lib
+  default-language: Haskell2010
+
+executable bk-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_bk
+  autogen-modules:
+      Paths_bk
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    , base >=4.7 && <5
+    , cmdargs >=0.10.22
+    , bk
+  default-language: Haskell2010
+
+test-suite bk-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_bk
+  autogen-modules:
+      Paths_bk
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , bk
+    , cassava >=0.5
+    , haskeline >=0.8
+    , wbee-lib
+  default-language: Haskell2010
