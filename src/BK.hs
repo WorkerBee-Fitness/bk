@@ -7,12 +7,12 @@
 {-# LANGUAGE ViewPatterns #-}
 module BK 
     (Bookmark(..),
-     BKType(..),     
+     BKType(..),  
+     parseBKType,   
      readCSVFile,
      writeCSVFile,
      addBookmark,
      removeBookmark,
-     parseBKType,
      findBookmark,
      handler,
      handler_) where
@@ -37,7 +37,7 @@ import qualified System.IO as System
 import qualified Control.Functor.Linear as Linear
 import qualified System.IO.Resource.Linear as Linear
 import qualified Data.Unrestricted.Linear as Linear
-import Data.Text (Text, concat, pack)
+import Data.Text (Text, concat, pack, unpack)
 import Data.ByteString.Lazy as BL hiding (null)
 import Data.ByteString as BS hiding (null)
 import GHC.Generics (Generic)
@@ -60,16 +60,18 @@ data BKType = BKAlias
     deriving (Generic, Show)
 
 instance FromField  BKType where
-    parseField (parseBKType->Right bktype) = return bktype
-    parseField (parseBKType->Left err) = fail err
+    parseField = parseField' . parseBKType . WBL.byteStringToTextUTF8
+        where
+            parseField' (Right bt) = return bt
+            parseField' (Left err) = fail err
 
 parseBKType 
-    :: BS.ByteString
+    :: Text
     -> Either String BKType
 parseBKType s 
         | s == "alias"    = return BKAlias
         | s == "bookmark" = return BKBookmark
-        | otherwise       = Left $ (WBL.byteStringToStringUTF8 s) ++ " not a valid bookmark type"
+        | otherwise       = Left $ (Data.Text.unpack s) ++ " is not a valid bookmark type"
 
 instance ToField BKType where
   toField :: BKType -> Field

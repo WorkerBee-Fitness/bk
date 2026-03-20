@@ -1,7 +1,10 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+{-# LANGUAGE DataKinds #-}
 module TUI
     (mainLoop) where
 
@@ -18,80 +21,93 @@ import System.Console.CmdArgs
      cmdArgsRun,
      args,
      modes, auto, Mode)
-import System.Environment (withArgs)
+import System.Environment (withArgs, getArgs)
 import Control.Monad (void)
 import System.Console.CmdArgs (CmdArgs)
-import BK (parseBKType, addBookmark, Bookmark (..), removeBookmark, findBookmark, handler, handler_)
+import BK (addBookmark, Bookmark (..), removeBookmark, findBookmark, handler, handler_, BKType (..), parseBKType)
 import qualified WBeeLib.ByteString as WBL
-import Data.Text (pack, Text)
+import Data.Text (pack, Text, split, unpack, splitOn)
 import System.Exit (exitFailure)
 import qualified Data.ByteString as BS
+import Data.Kind (Type)
+import System.Console.CmdArgs.GetOpt (getOpt)
+import qualified WBeeLib.Text as WBL
 
-data BKMode 
-    = Default {
-            find    :: Maybe String,
-            remove  :: Maybe String,
-            run     :: Maybe String
-        } 
-    | Add {
-            kind   :: Maybe String,
-            label  :: Maybe String,
-            target :: Maybe String
-        }
-    deriving (Show, Data, Typeable)
+progName :: String
+progName = "bk"
 
-data AddOption = AddOption  deriving (Show, Data, Typeable)
+progVersion :: String
+progVersion = "0.0.0.1"
 
-addOption :: BKMode
-addOption = Add {
-    kind = def &= help "the type of bookmark",
-    label = def &= help "the label to add",
-    target = def &= help "the command to add"
-}
+data BKOption 
+    = OptAddBK BKType Text Text
+    | OptRemoveBK Text
+    | OptFindBK Text
+    deriving (Show)
 
-option :: BKMode
-option = Default {       
-    find   = def &= help "find a bookmark",
-    remove = def &= help "remove a bookmark",
-    run    = def &= args
-} &= auto
-
-mainModes :: Mode  (CmdArgs BKMode)
-mainModes = cmdArgsMode $ modes [option, addOption] 
-    &= summary "bk 0.0.0.1"
-
-handleAddbk :: String -> String -> String -> IO ()
-handleAddbk (WBL.stringUTF8ToByteString->ty) (pack->l) (pack->t)= handleAddbk' ty l t
+parseBKAssignment :: Text -> Either String (Text,Text)
+parseBKAssignment s = aux $ split (=='=') s
     where
-        handleAddbk' :: BS.ByteString -> Text -> Text -> IO ()
-        handleAddbk' (parseBKType->Right typebk) labelbk targetbk 
+        aux :: [Text] -> Either String (Text,Text)       
+        aux [l,t] = Right $ (l,t)
+        aux _     = Left $ "invalid bookmark assignment: "++unpack s
+
+parseBKAdd :: [Text] -> Either String BKOption
+parseBKAdd [bkTypeStr,bkAssignStr] 
+    = case (_bkType,_bkAssign) of
+        (Right ty,Right (l,tar)) -> Right $ OptAddBK ty l tar
+        (Left err1, Right _) -> Left err1
+        (Right _, Left err2) -> Left err2
+        (Left err1, Left err2) -> Left $ err1 ++ "\n" ++ err2
+    where
+        _bkType = parseBKType bkTypeStr
+        _bkAssign = parseBKAssignment bkAssignStr
+parseBKAdd _ = Left $ "invalid number of arguments given to add"
+
+parseBKRemove :: [Text] -> Either String BKOption
+parseBKRemove [label] = Right $ OptRemoveBK label
+parseBKRemove _ = Left $ "invalid number of arguments given to remove"
+
+parseBKFind :: [Text] -> Either String BKOption
+parseBKFind [label] = Right $ OptFindBK label
+parseBKFind _ = Left $ "invalid number of arguments given to find"
+
+parseOpt :: [Text] -> Either String BKOption
+parseOpt [] = Left $ "help coming soon"
+parseOpt ("add":args) = parseBKAdd args
+parseOpt ("find":args) = parseBKFind args
+parseOpt ["help"] = Left $ "help coming soon"
+parseOpt ("remove":args) = parseBKRemove args
+parseOpt (s:_) = Left $ "invalid option: "++(unpack s)
+
+handleOpt :: BKOption -> IO ()
+handleOpt (OptAddBK ty l t) = handleAddbk ty l t
+handleOpt (OptRemoveBK l)   = handleRemovebk l
+handleOpt (OptFindBK l)     = handleFindbk l
+
+handleAddbk :: BKType -> Text -> Text -> IO ()
+handleAddbk ty l t = handleAddbk' ty l t
+    where
+        handleAddbk' :: BKType -> Text -> Text -> IO ()
+        handleAddbk' typebk labelbk targetbk 
             = let b = Bookmark { bkType = typebk, bkLabel = labelbk, bkTarget = targetbk } 
                in handler (return . addBookmark b)
-        handleAddbk' (parseBKType->Left err) _ _ = print err >> exitFailure
 
-handleFindbk :: String -> IO ()
-handleFindbk (pack->labelbk) = handler_
+handleFindbk :: Text -> IO ()
+handleFindbk labelbk = handler_
     (\csvContents -> case findBookmark labelbk csvContents of
                         Nothing -> putStrLn $ "bookmark not found " ++ (show labelbk)
                         Just b ->  print b)
 
-handleRemovebk :: String -> IO ()
-handleRemovebk (pack->labelbk) 
-    = handler (return . removeBookmark labelbk)
+handleRemovebk :: Text -> IO ()
+handleRemovebk labelbk = handler (return . removeBookmark labelbk)
 
-handleRunbk :: String -> IO ()
+handleRunbk :: Text -> IO ()
 handleRunbk _labelbk = undefined
 
 mainLoop ::  IO ()
 mainLoop = do
-    opts <- cmdArgsRun mainModes 
-    case opts of
-        Add Nothing _ _ -> error "error: add: [--kind] required"
-        Add _ Nothing _ -> error "error: add: [--type] required"
-        Add _ _ Nothing -> error "error: add: [--cmd] required"
-        Add (Just t) (Just l) (Just c) -> handleAddbk t l c
-        Default (Just l) _ _  -> handleFindbk l
-        Default _ (Just l) _  -> handleRemovebk l
-        Default _ _ (Just l)  -> handleRunbk l
-        Default _ _ Nothing   -> 
-            void $ withArgs ["--help"] $ cmdArgsRun mainModes
+    s <- getArgs
+    case parseOpt $ map pack s of
+        Right opt -> handleOpt opt
+        Left err -> error err
