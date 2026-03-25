@@ -9,6 +9,7 @@ module TUI
     (mainLoop) where
 
 import System.Environment (getArgs)
+import System.Process (spawnCommand)
 import BK (addBookmark, Bookmark (..), removeBookmark, findBookmark, handler, handler_, BKType (..), parseBKType)
 import Data.Text (pack, Text, split, unpack)
 
@@ -20,6 +21,7 @@ _progVersion = "0.0.0.1"
 
 data BKOption 
     = OptAddBK BKType Text Text
+    | OptRunBK Text
     | OptRemoveBK Text
     | OptFindBK Text
     | OptHelpBK 
@@ -35,6 +37,7 @@ helpString =
         ++"\tadd    bookmark LABEL=TARGET | add a new bookmark called LABEL that points to TARGET\n"
         ++"\tadd    alias    LABEL=TARGET | add a new alias called LABEL that points to TARGET\n"
         ++"\n"
+        ++"\trun    LABEL                 | runs the alias LABEL if it exists\n"
         ++"\tfind   LABEL                 | returns the TARGET of the bookmark/alias LABEL if it exists\n"
         ++"\n"
         ++"\tremove LABEL                 | removes the bookmark/alias called LABEL if it exists\n"
@@ -70,12 +73,17 @@ parseBKFind :: [Text] -> Either String BKOption
 parseBKFind [label] = Right $ OptFindBK label
 parseBKFind _ = Left $ "invalid number of arguments given to find"
 
+parseBKRun :: [Text] -> Either String BKOption
+parseBKRun [label] = Right $ OptRunBK label
+parseBKRun _       = Left $ "invalid number of arguments given to run"
+
 parseOpt :: [Text] -> Either String BKOption
 parseOpt []              = Left $ "help coming soon"
 parseOpt ["help"]        = Right OptHelpBK
 parseOpt ["version"]     = Right OptVersionBK
 parseOpt ("add":args)    = parseBKAdd args
 parseOpt ("find":args)   = parseBKFind args
+parseOpt ("run":args)    = parseBKRun args
 parseOpt ("remove":args) = parseBKRemove args
 parseOpt ["-v"]          = Right OptVersionBK
 parseOpt ["--version"]   = Right OptVersionBK
@@ -85,8 +93,9 @@ parseOpt (s:_)           = Left $ "invalid option: "++(unpack s)
 
 handleOpt :: BKOption -> IO ()
 handleOpt (OptAddBK ty l t) = handleAddbk ty l t
-handleOpt (OptRemoveBK l)   = handleRemovebk l
 handleOpt (OptFindBK l)     = handleFindbk l
+handleOpt (OptRunBK l)      = handleRunbk l
+handleOpt (OptRemoveBK l)   = handleRemovebk l
 handleOpt OptHelpBK         = handleHelp
 handleOpt OptVersionBK      = handleVersion
 
@@ -113,8 +122,14 @@ handleFindbk labelbk = handler_
 handleRemovebk :: Text -> IO ()
 handleRemovebk labelbk = handler (return . removeBookmark labelbk)
 
-_handleRunbk :: Text -> IO ()
-_handleRunbk _labelbk = undefined
+handleRunbk :: Text -> IO ()
+handleRunbk _labelbk = do
+    -- 1. Look up labelbk in the csv file and return its target (if it exists)
+    -- 2. Check to make sure it's an alias.
+    -- 3. If so, print the target before spawning, then use spawnCommand to spawn the target.
+    -- 4. Otherwise, report that it's not an alias.
+    _ <- spawnCommand "cod /tmp/scratch"
+    return ()
 
 mainLoop ::  IO ()
 mainLoop = do
