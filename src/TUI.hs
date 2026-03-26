@@ -16,7 +16,6 @@ import System.IO (hFlush, stdout)
 import WBeeLib.System.IO (putStrLnStdErr)
 import Data.Time.Calendar (Day)
 import Data.Time (getCurrentTime, UTCTime (..))
-import qualified Data.Map as Map
 
 _progName :: String
 _progName = "bk"

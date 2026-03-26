@@ -222,9 +222,9 @@ findBookmark :: Text
              -> Prelude.Maybe Bookmark
 findBookmark label = Map.lookup label
 
-recentBookmarks     :: Day
-                    -> Map.Map Text Bookmark
-                    -> Map.Map Text Bookmark
+recentBookmarks :: Day
+                -> Map.Map Text Bookmark
+                -> Map.Map Text Bookmark
 recentBookmarks today = Map.filter recentBookmark 
     where
         recentBookmark :: Bookmark -> Bool
