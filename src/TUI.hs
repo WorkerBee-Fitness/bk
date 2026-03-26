@@ -5,8 +5,7 @@
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# LANGUAGE DataKinds #-}
-module TUI
-    (mainLoop) where
+module TUI (mainLoop) where
 
 import System.Environment (getArgs)
 import System.Process (spawnCommand)
@@ -47,7 +46,6 @@ helpString =
         ++"\thelp                         | returns this help message\n"
         ++"\tversion                      | returns the current version"
 
-
 parseBKAssignment :: Text -> Either String (Text,Text)
 parseBKAssignment s = aux $ split (=='=') s
     where
@@ -80,7 +78,7 @@ parseBKRun [label] = Right $ OptRunBK label
 parseBKRun _       = Left $ "invalid number of arguments given to run"
 
 parseOpt :: [Text] -> Either String BKOption
-parseOpt []              = Left $ "help coming soon"
+parseOpt []              = Right OptHelpBK
 parseOpt ["help"]        = Right OptHelpBK
 parseOpt ["version"]     = Right OptVersionBK
 parseOpt ("add":args)    = parseBKAdd args
@@ -91,6 +89,7 @@ parseOpt ["-v"]          = Right OptVersionBK
 parseOpt ["--version"]   = Right OptVersionBK
 parseOpt ["-h"]          = Right OptHelpBK
 parseOpt ["--help"]      = Right OptHelpBK
+parseOpt args@[_]        = parseBKRun args
 parseOpt (s:_)           = Left $ "invalid option: "++(unpack s)
 
 handleOpt :: BKOption -> IO ()
