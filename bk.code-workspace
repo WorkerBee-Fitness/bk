@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"path": "/Volumes/BakedGoods/wbee.fit/bk"
+		},
+		{
+			"path": "/Volumes/BakedGoods/wbee.fit/wbee-lib"
+		}
+	],
+	"settings": {
+		"cSpell.words": [
+			"Envar",
+			"mcontents",
+			"preboot",
+			"Unlift"
+		]
+	}
+}
