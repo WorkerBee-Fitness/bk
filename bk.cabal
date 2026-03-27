@@ -49,7 +49,7 @@ library
     , wbee-lib
   default-language: Haskell2010
 
-executable bk-exe
+executable bk
   main-is: Main.hs
   other-modules:
       Paths_bk

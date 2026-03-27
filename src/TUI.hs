@@ -1,24 +1,41 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE DeriveDataTypeable     #-}
+{-# LANGUAGE ViewPatterns           #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE DataKinds              #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
-{-# LANGUAGE DataKinds #-}
 module TUI (mainLoop) where
 
-import System.Environment (getArgs)
-import System.Process (spawnCommand)
-import BK (addBookmark, Bookmark (..), removeBookmark, findBookmark, handler, handler_, BKType (..), parseBKType, recentBookmarks, isAlias, showBKMap, maxOffsetBKMap)
-import Data.Text (pack, Text, split, unpack)
-import Control.Monad (void)
-import System.IO (hFlush, stdout)
-import WBeeLib.System.IO (putStrLnStdErr)
-import Data.Time.Calendar (Day)
-import Data.Time (getCurrentTime, UTCTime (..))
+-- External Imports:
+import           System.Environment (getArgs)
+import           System.Process     (spawnCommand)
+import           Control.Monad      (void)
+import           Data.Time.Calendar (Day)
+import           Data.Text          (Text)
+import           System.IO          (hFlush, 
+                                     stdout)
+import           Data.Time          (UTCTime (..),
+                                     getCurrentTime)
 import qualified Data.Text as DT
-import Data.List (sortBy, maximumBy)
-import Data.Ord (Down(Down))
+
+-- Internal Imports:                                     
+import           WBeeLib.System.IO  (putStrLnStdErr)
+import           BK                 (Bookmark (..), 
+                                     BKType (..),
+                                     addBookmark, 
+                                     removeBookmark, 
+                                     findBookmark, 
+                                     handler, 
+                                     handler_,                                       
+                                     parseBKType, 
+                                     recentBookmarks, 
+                                     showBKMap, 
+                                     maxOffsetBKMap, 
+                                     showBKType, 
+                                     filterBKMap, 
+                                     isAlias, 
+                                     isBookmark)
 
 _progName :: String
 _progName = "bk"
@@ -31,6 +48,9 @@ data BKOption
     | OptRunBK Text
     | OptRemoveBK Text
     | OptFindBK Text
+    | OptList
+    | OptBookmarks    
+    | OptAliases
     | OptRecentsBK
     | OptHelpBK 
     | OptVersionBK
@@ -50,14 +70,17 @@ helpString =
         ++"\n"
         ++"\trun    LABEL                 | runs the alias LABEL if it exists\n"
         ++"\tfind   LABEL                 | returns the TARGET of the bookmark/alias LABEL if it exists\n"
-        ++"\n"
         ++"\tremove LABEL                 | removes the bookmark/alias called LABEL if it exists\n"
+        ++"\n"
+        ++"\tlist                         | lists all bookmarks and aliases\n"
+        ++"\tbookmarks                    | lists all bookmarks\n"
+        ++"\taliases                      | lists all aliases"
         ++"\n"
         ++"\thelp                         | returns this help message\n"
         ++"\tversion                      | returns the current version"
 
 parseBKAssignment :: Text -> Either Text (Text,Text)
-parseBKAssignment s = aux $ split (=='=') s
+parseBKAssignment s = aux $ DT.split (=='=') s
     where
         aux :: [Text] -> Either Text (Text,Text)       
         aux [l,t] = Right $ (l,t)
@@ -85,12 +108,15 @@ parseBKFind _ = Left $ "invalid number of arguments given to find"
 
 parseBKRun :: [Text] -> Either Text BKOption
 parseBKRun [label] = Right $ OptRunBK label
-parseBKRun _       = Left $ "invalid number of arguments given to run"
+parseBKRun _       = Left  $ "invalid number of arguments given to run"
 
 parseOpt :: [Text] -> Either Text BKOption
 parseOpt []              = Right OptRecentsBK
 parseOpt ["help"]        = Right OptHelpBK
 parseOpt ["version"]     = Right OptVersionBK
+parseOpt ["list"]        = Right OptList
+parseOpt ["bookmarks"]   = Right OptBookmarks
+parseOpt ["aliases"]     = Right OptAliases
 parseOpt ("add":args)    = parseBKAdd args
 parseOpt ("find":args)   = parseBKFind args
 parseOpt ("run":args)    = parseBKRun args
@@ -104,6 +130,9 @@ parseOpt (s:_)           = Left $ "invalid option: " <> s
 
 handleOpt :: BKOption -> IO ()
 handleOpt OptRecentsBK      = handleRecentsbk
+handleOpt OptList           = handleListBookmarks Nothing
+handleOpt OptBookmarks      = handleListBookmarks (Just BKBookmark)
+handleOpt OptAliases        = handleListBookmarks (Just BKAlias)
 handleOpt (OptAddBK ty l t) = handleAddbk ty l t
 handleOpt (OptFindBK l)     = handleFindbk l
 handleOpt (OptRunBK l)      = handleRunbk l
@@ -136,26 +165,33 @@ handleAddbk ty l t = do
                         bkCreated = createdbk, 
                         bkLastUsed = createdbk 
                       } 
-               in handler (return . addBookmark b)
- 
+               in handler $ \csvContents -> do
+                    let newMap = addBookmark b csvContents
+                    putStrLn $ "created " <> DT.unpack (showBKType typebk)  <> " " <> show (DT.unpack labelbk)
+                    return newMap
+
 handleFindbk :: Text -> IO ()
 handleFindbk labelbk = handler_
     (\csvContents -> case findBookmark labelbk csvContents of
-                        Nothing -> putStrLnStdErr $ "bookmark not found \"" <> labelbk <> "\""
+                        Nothing -> putStrLnStdErr $ "bookmark not found " <> DT.show labelbk 
                         Just b ->  print b)
 
 handleRemovebk :: Text -> IO ()
-handleRemovebk labelbk = handler (return . removeBookmark labelbk)
+handleRemovebk labelbk = handler $ 
+    \csvContents -> do
+        let newMap = removeBookmark labelbk csvContents
+        putStrLn $ "removed bookmark " <> show (DT.unpack labelbk)
+        return newMap
 
 handleRunbk :: Text -> IO ()
 handleRunbk labelbk = handler_ $ \csvContents -> do
     case findBookmark labelbk csvContents of
-        Nothing -> putStrLnStdErr $ "alias not found " <> labelbk
+        Nothing -> putStrLnStdErr $ "alias not found " <> DT.show labelbk
         Just b -> 
             case bkType b of
-                BKBookmark -> putStrLnStdErr $ labelbk <> " is not an alias"
+                BKBookmark -> putStrLnStdErr $ (DT.show labelbk) <> " is not an alias"
                 BKAlias -> do
-                    let target = unpack . bkTarget $ b
+                    let target = DT.unpack . bkTarget $ b
                     putStrLn $ "running "++(show target)
                     hFlush stdout
                     void $ spawnCommand target
@@ -164,14 +200,26 @@ handleRecentsbk :: IO ()
 handleRecentsbk = handler_
     (\csvContents -> 
         do today <- getCurrentTime
-           let maxOffset = maxOffsetBKMap csvContents
+           let maxLabelOffset = maxOffsetBKMap csvContents
            let (recAliases,recBks) = recentBookmarks (utctDay today) csvContents
-           putStrLn . DT.unpack  $ showBKMap maxOffset recAliases
-           putStrLn . DT.unpack  $ showBKMap maxOffset recBks)
+           putStrLn . DT.unpack  $ showBKMap maxLabelOffset recAliases
+           putStrLn . DT.unpack  $ showBKMap maxLabelOffset recBks)
+
+handleListBookmarks :: Maybe BKType -> IO ()
+handleListBookmarks mbkType = handler_ $
+    \csvContents -> 
+        do let _map = filterBKMap (pred mbkType) csvContents
+           let maxLabelOffset = maxOffsetBKMap _map
+           putStrLn . DT.unpack  $ showBKMap maxLabelOffset _map
+    where
+        pred :: Maybe BKType -> Bookmark -> Bool
+        pred Nothing _ = True
+        pred (Just BKAlias) bk = isAlias bk
+        pred (Just BKBookmark) bk = isBookmark bk
 
 mainLoop ::  IO ()
 mainLoop = do
     s <- getArgs
-    case parseOpt $ map pack s of
+    case parseOpt $ map DT.pack s of
         Right opt -> handleOpt opt
         Left err -> putStrLnStdErr err
