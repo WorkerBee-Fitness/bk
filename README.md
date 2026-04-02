@@ -45,6 +45,10 @@ Adding an alias is very similar to adding a bookmark:
 bk add alias code-proj="code path/to/project"
 ```
 
+The labels of bookmarks must begin with an alphabet symbol and then only consist
+of alphanumeric symbols or underscore or hyphen. Targets are not allowed to be
+empty.
+
 The main difference between `bk add bookmark` and `bk add alias` is that when we
 ask Beekeeper to run a bookmark its target is output to the terminal, but when
 we ask Beekeeper to run an alias it will execute its target as a command.
@@ -91,13 +95,14 @@ bk remove LABEL
 to remove a bookmark or alias.
 
 # Listing bookmarks
-Use:
+If you run Beekeeper with no arguments at all:
 
 ```.bash
-bk list
+bk
 ```
 
-to see a list of all bookmarks and aliases.
+then it will list recent bookmarks. This is the list of all bookmarks and
+aliases that were created within the last 10 days.
 
 You can list just bookmarks using:
 
@@ -110,6 +115,15 @@ and just aliases using:
 ```.bash
 bk aliases
 ```
+
+Use:
+
+```.bash
+bk list
+```
+
+to see a list of all bookmarks and aliases.
+
 
 # Help and version
 Use:
