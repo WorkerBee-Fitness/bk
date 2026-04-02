@@ -14,8 +14,8 @@ management tool for the [Haskell](https://www.haskell.org/) programming
 language. Then clone this repository and run the following to install Beekeeper:
 
 ```.bash
-stack build
-stack install
+# stack build
+# stack install
 ```
 
 After installation there is no setup necessary. Beekeeper saves all of it's data
@@ -32,7 +32,7 @@ The following sections give examples of every feature Beekeeper supports.
 To add a bookmark use the following command:
 
 ```.bash
-bk add bookmark LABEL=TARGET
+# bk add bookmark LABEL=TARGET
 ```
 
 the string `LABEL` is the name of the bookmark and its value is `TARGET`. For
