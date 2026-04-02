@@ -39,7 +39,7 @@ the string `LABEL` is the name of the bookmark and its value is `TARGET`. For
 example, `bk add bookmark math-proj="path/to/math/project"` will add a bookmark
 with label `math-proj` whose target is `path/to/math/project`.
 
-Adding an alias is very similar to adding a command:
+Adding an alias is very similar to adding a bookmark:
 
 ```.bash
 bk add alias code-proj="code path/to/project"
