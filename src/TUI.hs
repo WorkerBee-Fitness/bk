@@ -18,24 +18,26 @@ import           System.IO          (hFlush,
 import           System.Exit        (exitFailure)
 import           Data.Time          (UTCTime (..),
                                      getCurrentTime)
+
 import qualified Data.Text as DT
 
 -- Internal Imports:                                     
-import           BK                 (Bookmark (..), 
+import           BK                 (Bookmark (..),
                                      BKType (..),
-                                     addBookmark, 
-                                     removeBookmark, 
-                                     findBookmark, 
-                                     handler, 
-                                     handler_,                                       
-                                     parseBKType, 
-                                     recentBookmarks, 
-                                     showBKMap, 
-                                     maxOffsetBKMap, 
-                                     showBKType, 
-                                     filterBKMap, 
-                                     isAlias, 
-                                     isBookmark)
+                                     addBookmark,
+                                     removeBookmark,
+                                     findBookmark,
+                                     handler,
+                                     handler_,
+                                     parseBKType,
+                                     recentBookmarks,
+                                     showBKMap,
+                                     maxOffsetBKMap,
+                                     showBKType,
+                                     filterBKMap,
+                                     isAlias,
+                                     isBookmark, bookmark)
+
 import qualified Lib
 
 _progName :: String
@@ -158,22 +160,18 @@ handleAddbk ty l t = do
 
         handleAddbk' :: BKType -> Text -> Text -> Day -> IO ()
         handleAddbk' typebk labelbk targetbk createdbk
-            = let b = Bookmark { 
-                        bkType = typebk, 
-                        bkLabel = labelbk, 
-                        bkTarget = targetbk, 
-                        bkCreated = createdbk, 
-                        bkLastUsed = createdbk 
-                      } 
-               in handler $ \csvContents -> do
-                    homedir <- Lib.getHomeDirectory
-                    either 
-                        (\errMsg -> do Lib.putStrLnStdErr errMsg
-                                       exitFailure)
-                        (\updatedMap -> 
-                            do putStrLn $ "created " <> DT.unpack (showBKType typebk)  <> " " <> show (DT.unpack labelbk)
-                               return updatedMap)
-                        $ addBookmark b homedir csvContents   
+            = either
+                Lib.putStrLnStdErr
+                (\b -> handler $ \csvContents -> 
+                         do homedir <- Lib.getHomeDirectory
+                            either 
+                                (\errMsg -> do Lib.putStrLnStdErr errMsg
+                                               exitFailure)
+                                (\updatedMap -> 
+                                    do putStrLn $ "created " <> DT.unpack (showBKType typebk)  <> " " <> show (DT.unpack labelbk)
+                                       return updatedMap)
+                                $ addBookmark b homedir csvContents)
+              $ bookmark typebk labelbk targetbk createdbk createdbk 
 
 handleFindbk :: Text -> IO ()
 handleFindbk labelbk = handler_
