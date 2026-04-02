@@ -9,15 +9,18 @@ module TUI (mainLoop) where
 
 -- External Imports:
 import           System.Environment (getArgs)
-import           System.Process     (spawnCommand)
-import           Control.Monad      (void)
+import           System.Process     (shell
+                                    ,readCreateProcessWithExitCode)
 import           Data.Time.Calendar (Day)
 import           Data.Text          (Text)
-import           System.IO          (hFlush, 
-                                     stdout)
-import           System.Exit        (exitFailure)
-import           Data.Time          (UTCTime (..),
-                                     getCurrentTime)
+import           System.IO          (stdout
+                                    ,hPutStr
+                                    ,stderr)
+import           System.Exit        (exitFailure
+                                    ,ExitCode (..)
+                                    , exitWith)
+import           Data.Time          (UTCTime (..)
+                                    ,getCurrentTime)
 
 import qualified Data.Text as DT
 
@@ -36,9 +39,12 @@ import           BK                 (Bookmark (..),
                                      showBKType,
                                      filterBKMap,
                                      isAlias,
-                                     isBookmark, bookmark)
+                                     isBookmark, 
+                                     bookmark)
 
 import qualified Lib
+import Lib (putStrLnStdErr)
+import Data.List (uncons)
 
 _progName :: String
 _progName = "bk"
@@ -161,14 +167,14 @@ handleAddbk ty l t = do
         handleAddbk' :: BKType -> Text -> Text -> Day -> IO ()
         handleAddbk' typebk labelbk targetbk createdbk
             = either
-                Lib.putStrLnStdErr
+                (Lib.putStrLnStdErr . ("error: "<>))
                 (\b -> handler $ \csvContents -> 
                          do homedir <- Lib.getHomeDirectory
                             either 
-                                (\errMsg -> do Lib.putStrLnStdErr errMsg
+                                (\errMsg -> do Lib.putStrLnStdErr $ "error: " <> errMsg
                                                exitFailure)
                                 (\updatedMap -> 
-                                    do putStrLn $ "created " <> DT.unpack (showBKType typebk)  <> " " <> show (DT.unpack labelbk)
+                                    do putStrLn $ "created " <> DT.unpack (showBKType typebk)  <> " \"" <> (DT.unpack labelbk) <> "\""
                                        return updatedMap)
                                 $ addBookmark b homedir csvContents)
               $ bookmark typebk labelbk targetbk createdbk createdbk 
@@ -187,17 +193,27 @@ handleRemovebk labelbk = handler $
         return newMap
 
 handleRunbk :: Text -> [Text] -> IO ()
-handleRunbk labelbk args = handler_ $ \csvContents -> do
+handleRunbk labelbk inArgs = handler_ $ \csvContents -> do
     case findBookmark labelbk csvContents of
         Nothing -> Lib.putStrLnStdErr $ "bookmark not found " <> DT.show labelbk
         Just b -> 
             case bkType b of
                 BKBookmark -> putStrLn . DT.unpack . bkTarget $ b
                 BKAlias -> do
-                    let cmd = DT.unpack $ bkTarget b <> " " <> DT.unwords args
-                    putStrLn $ "running "++(show $ cmd)
-                    hFlush stdout
-                    void $ spawnCommand cmd
+                    let cmdM = uncons $ DT.words $ bkTarget b
+                    maybe 
+                        (putStrLnStdErr $ "error: target is empty for label \"" <> (bkLabel b) <> "\"")
+                        (\(cmd',savedArgs) -> do let args = savedArgs <> inArgs
+                                                 let cmd = DT.unpack . DT.unwords $ cmd':args
+                                                 putStrLn $ "running \""<>cmd<>"\""                                                 
+                                                 (exCode,out,err) <- readCreateProcessWithExitCode (shell cmd) ""
+                                                 case exCode of
+                                                    ExitSuccess -> do putStr out                                                                       
+                                                                      exitWith ExitSuccess
+                                                    ExitFailure i -> do hPutStr stdout out
+                                                                        hPutStr stderr err
+                                                                        exitWith $ ExitFailure i)
+                        cmdM                    
 
 handleRecentsbk :: IO ()
 handleRecentsbk = handler_
@@ -226,4 +242,4 @@ mainLoop = do
     s <- getArgs
     case parseOpt $ map DT.pack s of
         Right opt -> handleOpt opt
-        Left err -> Lib.putStrLnStdErr err
+        Left err -> Lib.putStrLnStdErr $ "error: " <> err

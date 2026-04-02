@@ -169,22 +169,33 @@ data Bookmark = Bookmark {
     bkLastUsed :: !Day
 } deriving (Generic)
 
-validBookmarkLabel :: DT.Text -> Bool
+validBookmarkLabel 
+    :: DT.Text 
+    -> Bool
 validBookmarkLabel (DT.uncons->Nothing) = True
 validBookmarkLabel (DT.uncons->Just (h,t)) | DT.isAlpha h 
     = flip DT.all t $ DT.isAlphaNum `Lib.orF` (flip DT.elem "_-")
 validBookmarkLabel (DT.uncons->Just (_,_)) | otherwise = False
 
-bookmark :: BKType -> Text -> Text -> Day -> Day -> Either Text Bookmark
-bookmark bktype bklabel bktarget bkcreated bklastused | validBookmarkLabel bklabel
-    = Right $ Bookmark { 
-        bkType     = bktype, 
-        bkLabel    = bklabel, 
-        bkTarget   = bktarget, 
-        bkCreated  = bkcreated, 
-        bkLastUsed = bklastused 
-      }
-bookmark _ bklabel _ _ _ | otherwise = Left $ "invalid label " <> (DT.show bklabel)
+bookmark 
+    :: BKType 
+    -> Text 
+    -> Text 
+    -> Day 
+    -> Day 
+    -> Either Text Bookmark
+bookmark bktype bklabel bktarget bkcreated bklastused 
+    = if validBookmarkLabel bklabel 
+      then if not (DT.null bktarget)
+           then Right $ Bookmark { 
+                          bkType     = bktype, 
+                          bkLabel    = bklabel, 
+                          bkTarget   = bktarget, 
+                          bkCreated  = bkcreated, 
+                          bkLastUsed = bklastused 
+                        }
+           else Left $ "empty target for label \"" <> bklabel <> "\""
+      else Left $ "invalid label " <> (DT.show bklabel)
 
 instance Show Bookmark where
     show :: Bookmark -> String  
