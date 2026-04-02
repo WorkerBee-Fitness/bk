@@ -8,8 +8,9 @@
 {-# OPTIONS_GHC -Wno-orphans      #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 module BK 
-    (Bookmark(..),
+    (Bookmark(bkType,bkLabel, bkTarget, bkCreated, bkLastUsed),    
      BKType(..),  
+     bookmark,
      parseBKType,   
      readCSVFile,
      writeCSVFile,
@@ -53,7 +54,7 @@ import Prelude                  (Either (..),
                                  map,
                                  (<>),
                                  print, 
-                                 undefined)
+                                 flip)
 import GHC.Generics             (Generic)
 import Data.Text                (Text, 
                                  concat, 
@@ -87,16 +88,18 @@ import Data.Time.Format.ISO8601 (ISO8601 (iso8601Format),
                                  Format (formatShowM),
                                  formatParseM)
 
+import qualified Prelude
 import qualified Control.Functor.Linear    as Linear
 import qualified System.IO.Resource.Linear as Linear
 import qualified Data.Unrestricted.Linear  as Linear
 import qualified Data.Text                 as DT 
+import qualified Data.Char                 as DT
 import qualified Data.ByteString           as BS
 import qualified Data.Csv.Incremental      as CsvInc
 import qualified Data.Vector               as Vec
 import qualified Data.Map                  as Map
 
-import qualified Lib as Lib
+import qualified Lib  
 
 undefined :: a
 undefined = Prelude.undefined
@@ -165,6 +168,23 @@ data Bookmark = Bookmark {
     bkCreated  :: !Day,
     bkLastUsed :: !Day
 } deriving (Generic)
+
+validBookmarkLabel :: DT.Text -> Bool
+validBookmarkLabel (DT.uncons->Nothing) = True
+validBookmarkLabel (DT.uncons->Just (h,t)) | DT.isAlpha h 
+    = flip DT.all t $ DT.isAlphaNum `Lib.orF` (flip DT.elem "_-")
+validBookmarkLabel (DT.uncons->Just (_,_)) | otherwise = False
+
+bookmark :: BKType -> Text -> Text -> Day -> Day -> Either Text Bookmark
+bookmark bktype bklabel bktarget bkcreated bklastused | validBookmarkLabel bklabel
+    = Right $ Bookmark { 
+        bkType     = bktype, 
+        bkLabel    = bklabel, 
+        bkTarget   = bktarget, 
+        bkCreated  = bkcreated, 
+        bkLastUsed = bklastused 
+      }
+bookmark _ bklabel _ _ _ | otherwise = Left $ "invalid label " <> (DT.show bklabel)
 
 instance Show Bookmark where
     show :: Bookmark -> String  

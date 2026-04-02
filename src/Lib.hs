@@ -8,7 +8,9 @@ module Lib
     expandHomeDirectory,
     lazyByteStringToByteString,
     putStrLnStdOut,
-    putStrLnStdErr) where
+    putStrLnStdErr,
+    andF,
+    orF) where
 
 import qualified Data.ByteString      as BS
 import qualified Data.ByteString.Lazy as BL
@@ -89,3 +91,10 @@ expandHomeDirectory homedir (System.FP.normalise->path)
     | ['~',System.FP.pathSeparator] `isPrefixOf` path = homedir </> (drop 2 path)
     | "~" `isPrefixOf` path = homedir </> (drop 1 path)
 expandHomeDirectory _ path = path
+
+-- Booleans:
+andF :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
+andF f g x = (f x) && (g x)
+
+orF :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
+orF f g x = (f x) || (g x)
