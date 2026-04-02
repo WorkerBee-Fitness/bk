@@ -52,7 +52,8 @@ import Prelude                  (Either (..),
                                  (&&),
                                  map,
                                  (<>),
-                                 print, undefined)
+                                 print, 
+                                 undefined)
 import GHC.Generics             (Generic)
 import Data.Text                (Text, 
                                  concat, 

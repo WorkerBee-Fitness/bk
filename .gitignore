@@ -1,2 +1,5 @@
 .stack-work/
 *~
+.DS_Store
+*.mp4
+*.mov
