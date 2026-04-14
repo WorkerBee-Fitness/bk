@@ -13,7 +13,7 @@ module TUI (mainLoop) where
 import Data.Text          (Text)
 import System.Exit        (ExitCode(..)
                           ,exitFailure
-                          ,exitWith)
+                          ,exitWith, exitSuccess)
 import Data.Time.Calendar (Day)
 import Data.Time          (getCurrentTime
                           ,UTCTime (..))
@@ -33,11 +33,10 @@ import Data.Text            qualified as DT
 -- 
 import BK  (BKType (..)
            ,Bookmark (..)
-           ,handler
+           ,BKMap
            ,showBKType
            ,addBookmark
            ,bookmark
-           ,handler_
            ,findBookmark
            ,removeBookmark
            ,maxOffsetBKMap
@@ -45,7 +44,10 @@ import BK  (BKType (..)
            ,showBKMap
            ,filterBKMap
            ,isAlias
-           ,isBookmark)
+           ,isBookmark
+           ,readCSVFile
+           ,writeCSVFile
+           ,initializeWorkDir, filterLabels)
 
 import qualified Lib
 import qualified Data.Char as DT
@@ -162,10 +164,17 @@ bkAddCmdParser = OptA.hsubparser
     <> OptA.command "alias"    (OptA.info (bkAddBkParser BKAlias)    (OptA.progDesc "Add an alias"))
     )
 
+completeLabel :: BKMap -> String -> IO [String]
+completeLabel bkMap partial = do
+    putStrLn "Completer called"
+    return . map DT.unpack $ filterLabels (\l -> (DT.pack partial) `DT.isPrefixOf` l) bkMap
+
 -- | Parses the arguments to the run option.
-bkRunCmdParser :: OptA.Parser BKOption
-bkRunCmdParser = 
-    (OptA.argument labelParser (OptA.metavar "LABEL")  
+bkRunCmdParser 
+    :: BKMap
+    -> OptA.Parser BKOption
+bkRunCmdParser bkMap = 
+    (OptA.argument labelParser (OptA.metavar "LABEL" <> OptA.completer (OptA.mkCompleter (completeLabel bkMap)))  
     <*> 
     (OptA.many $ OptA.argument argParser (OptA.metavar "ARGS")))
     where
@@ -176,9 +185,11 @@ bkRunCmdParser =
         argParser = OptA.str
 
 -- | Parses the arguments to the @remove@ command.
-bkRemoveCmdParser :: OptA.Parser BKOption
-bkRemoveCmdParser = 
-    OptA.argument labelParser (OptA.metavar "LABEL")  
+bkRemoveCmdParser 
+    :: BKMap
+    -> OptA.Parser BKOption    
+bkRemoveCmdParser bkMap = 
+    OptA.argument labelParser (OptA.metavar "LABEL" <> OptA.completer (OptA.mkCompleter (completeLabel bkMap)))  
     where
         labelParser ::  OptA.ReadM BKOption
         labelParser = OptA.eitherReader $ Atto.parseOnly optRemoveBKParser . DT.pack
@@ -208,24 +219,28 @@ bkRecentsParser :: OptA.Parser BKOption
 bkRecentsParser = pure OptRecentsBK
 
 -- | Parses the various command-line options.
-bkCmdParser :: OptA.Parser BKOption
-bkCmdParser = OptA.hsubparser 
-    (  OptA.command "add"       (OptA.info (bkAddCmdParser)         (OptA.progDesc "Add a bookmark or alias"))
-    <> OptA.command "run"       (OptA.info (bkRunCmdParser)         (OptA.progDesc "Runs a bookmark or alias"))
-    <> OptA.command "remove"    (OptA.info (bkRemoveCmdParser)      (OptA.progDesc "Removes a bookmark or alias"))
-    <> OptA.command "find"      (OptA.info (bkFindCmdParser)        (OptA.progDesc "Searches for a bookmark or alias"))
-    <> OptA.command "list"      (OptA.info (bkListCmdParser)        (OptA.progDesc "Lists all bookmarks and aliases"))
-    <> OptA.command "bookmarks" (OptA.info (bkListBksCmdParser)     (OptA.progDesc "Lists all bookmarks"))
-    <> OptA.command "aliases"   (OptA.info (bkListAliasesCmdParser) (OptA.progDesc "Lists all aliases"))
+bkCmdParser 
+    :: BKMap
+    -> OptA.Parser BKOption
+bkCmdParser bkMap = OptA.hsubparser 
+    (  OptA.command "add"       (OptA.info (bkAddCmdParser)          (OptA.progDesc "Add a bookmark or alias"))
+    <> OptA.command "run"       (OptA.info (bkRunCmdParser bkMap)    (OptA.progDesc "Runs a bookmark or alias"))
+    <> OptA.command "remove"    (OptA.info (bkRemoveCmdParser bkMap) (OptA.progDesc "Removes a bookmark or alias"))
+    <> OptA.command "find"      (OptA.info (bkFindCmdParser)         (OptA.progDesc "Searches for a bookmark or alias"))
+    <> OptA.command "list"      (OptA.info (bkListCmdParser)         (OptA.progDesc "Lists all bookmarks and aliases"))
+    <> OptA.command "bookmarks" (OptA.info (bkListBksCmdParser)      (OptA.progDesc "Lists all bookmarks"))
+    <> OptA.command "aliases"   (OptA.info (bkListAliasesCmdParser)  (OptA.progDesc "Lists all aliases"))
     )
-    OptA.<|> bkRunCmdParser  -- run is the default when no commands are given.
-    OptA.<|> bkRecentsParser -- No options or arguments, then show recents.
+    OptA.<|> (bkRunCmdParser bkMap)  -- run is the default when no commands are given.
+    OptA.<|> bkRecentsParser         -- No options or arguments, then show recents.
 
 -- | Generates the various additional options and messages using the command
 -- parser. This adds the @--help@ and @--version@ options as well as the program
 -- description and header for the help message.
-bkOpts :: OptA.ParserInfo BKOption
-bkOpts = OptA.info (bkCmdParser  OptA.<**> OptA.helper OptA.<**> OptA.simpleVersioner _progVersion)
+bkOpts 
+    :: BKMap                     -- Contents of CSV file
+    -> OptA.ParserInfo BKOption
+bkOpts bkMap = OptA.info ((bkCmdParser bkMap) OptA.<**> OptA.helper OptA.<**> OptA.simpleVersioner _progVersion)
     (OptA.fullDesc <> OptA.progDesc _progName <> OptA.header "BeeKeeper remembers so you don't have to!")
 
 --
@@ -235,71 +250,74 @@ bkOpts = OptA.info (bkCmdParser  OptA.<**> OptA.helper OptA.<**> OptA.simpleVers
 -- | Runs an options handler.
 handleOpt 
     :: BKOption -- ^ Option to handle
-    -> IO ()
-handleOpt OptRecentsBK      = handleRecentsbk
-handleOpt OptList           = handleListBookmarks Nothing
-handleOpt OptBookmarks      = handleListBookmarks (Just BKBookmark)
-handleOpt OptAliases        = handleListBookmarks (Just BKAlias)
-handleOpt (OptAddBK ty l t) = handleAddbk ty l t
-handleOpt (OptFindBK l)     = handleFindbk l
-handleOpt (OptRunBK l args) = handleRunbk l args
-handleOpt (OptRemoveBK l)   = handleRemovebk l
+    -> BKMap    -- ^ Contents of the CSV file
+    -> IO (Maybe BKMap)
+handleOpt OptRecentsBK      = handleRecentsbk 
+handleOpt OptList           = handleListBookmarks Nothing 
+handleOpt OptBookmarks      = handleListBookmarks (Just BKBookmark) 
+handleOpt OptAliases        = handleListBookmarks (Just BKAlias) 
+handleOpt (OptAddBK ty l t) = handleAddbk ty l t 
+handleOpt (OptFindBK l)     = handleFindbk l 
+handleOpt (OptRunBK l args) = handleRunbk l args 
+handleOpt (OptRemoveBK l)   = handleRemovebk l 
 
 -- | Handler for the @add@ option.
 handleAddbk 
     :: BKType -- ^ Type of the bookmark being added
     -> Text   -- ^ Label of the bookmark being added
     -> Text   -- ^ Target of the bookmark being added
-    -> IO ()
-handleAddbk ty l t = do
+    -> BKMap  -- ^ Contents of the CSV file
+    -> IO (Maybe BKMap)
+handleAddbk ty l t csvContents = do
     createdDay <- today
-    handleAddbk' ty l t createdDay
+    Just <$> handleAddbk' ty l t createdDay csvContents
     where
         today :: IO Day
         today = do
             currentUTCTime <- getCurrentTime
             return . utctDay $ currentUTCTime
 
-        handleAddbk' :: BKType -> Text -> Text -> Day -> IO ()
-        handleAddbk' typebk labelbk targetbk createdbk
+        handleAddbk' :: BKType -> Text -> Text -> Day -> BKMap -> IO BKMap
+        handleAddbk' typebk labelbk targetbk createdbk csvContents
             = either
-                (Lib.putStrLnStdErr . ("error: "<>))
-                (\b -> handler $ \csvContents -> 
-                         do homedir <- Lib.getHomeDirectory
-                            either 
-                                (\errMsg -> do Lib.putStrLnStdErr $ "error: " <> errMsg
-                                               exitFailure)
-                                (\updatedMap -> 
-                                    do putStrLn $ "created " <> DT.unpack (showBKType typebk)  <> " \"" <> (DT.unpack labelbk) <> "\""
-                                       return updatedMap)
-                                $ addBookmark b homedir csvContents)
+                (\errMsg -> Lib.putStrLnStdErr ("error: "<>errMsg) >> return csvContents)
+                (\b -> do homedir <- Lib.getHomeDirectory
+                          either 
+                              (\errMsg -> do Lib.putStrLnStdErr $ "error: " <> errMsg
+                                             exitFailure)
+                              (\updatedMap -> 
+                                  do putStrLn $ "created " <> DT.unpack (showBKType typebk)  <> " \"" <> (DT.unpack labelbk) <> "\""
+                                     return updatedMap)
+                              $ addBookmark b homedir csvContents)
               $ bookmark typebk labelbk targetbk createdbk createdbk 
 
 -- | Handler for the @find@ option.
 handleFindbk 
-    :: Text -- ^ Label of the bookmark to search for
-    -> IO ()
-handleFindbk labelbk = handler_
-    (\csvContents -> case findBookmark labelbk csvContents of
-                        Nothing -> Lib.putStrLnStdErr $ "bookmark not found " <> DT.show labelbk 
-                        Just b ->  print b)
+    :: Text  -- ^ Label of the bookmark to search for
+    -> BKMap -- ^ Contents of the CSV file
+    -> IO (Maybe BKMap)
+handleFindbk labelbk csvContents = do
+    maybe (Lib.putStrLnStdErr $ "bookmark not found " <> DT.show labelbk)
+          print
+        $ findBookmark labelbk csvContents
+    return Nothing
 
 -- | Handler for the @remove@ option.
 handleRemovebk 
     :: Text  -- ^ Label of the bookmark to remove
-    -> IO ()
-handleRemovebk labelbk = handler $ 
-    \csvContents -> do
-        let newMap = removeBookmark labelbk csvContents
+    -> BKMap -- ^ Contents of the CSV file
+    -> IO (Maybe BKMap)
+handleRemovebk labelbk csvContents = do
         putStrLn $ "removed bookmark " <> show (DT.unpack labelbk)
-        return newMap
+        return . Just $ removeBookmark labelbk csvContents
 
 -- | Handler for the @run@ option.
 handleRunbk 
     :: Text   -- ^ Label of the bookmark to run
     -> [Text] -- ^ List of arguments to pass to the target
-    -> IO ()
-handleRunbk labelbk inArgs = handler_ $ \csvContents -> do
+    -> BKMap  -- ^ Contents of the CSV file
+    -> IO (Maybe BKMap)
+handleRunbk labelbk inArgs csvContents = do
     case findBookmark labelbk csvContents of
         Nothing -> Lib.putStrLnStdErr $ "bookmark not found " <> DT.show labelbk
         Just b -> 
@@ -319,30 +337,34 @@ handleRunbk labelbk inArgs = handler_ $ \csvContents -> do
                                                     ExitFailure i -> do hPutStr stdout out
                                                                         hPutStr stderr err
                                                                         exitWith $ ExitFailure i)
-                        cmdM                    
+                        cmdM
+    return Nothing
 
 -- | Handler for the @recents@ option.
-handleRecentsbk :: IO ()
-handleRecentsbk = handler_
-    (\csvContents -> 
+handleRecentsbk 
+    :: BKMap            -- ^ Contents of the CSV file
+    -> IO (Maybe BKMap)
+handleRecentsbk csvContents = 
         do today <- getCurrentTime
            let maxLabelOffset = maxOffsetBKMap csvContents
            let (recAliases,recBks) = recentBookmarks (utctDay today) csvContents
            --TODO: Need to pull this out into a function def:
            putStrLn . DT.unpack  $ showBKMap maxLabelOffset recAliases
-           putStrLn . DT.unpack  $ showBKMap maxLabelOffset recBks)
+           putStrLn . DT.unpack  $ showBKMap maxLabelOffset recBks
+           return Nothing
 
 -- | Handler for the @list@ option.
 -- If the input is @Nothing@ then list all of the bookmarks and aliases, but if
 -- it's @Just bkType@ then filter the list based on the value of @bkType@.
 handleListBookmarks 
     :: Maybe BKType -- ^ List filter
-    -> IO ()
-handleListBookmarks mbkType = handler_ $
-    \csvContents -> 
-        do let _map = filterBKMap (pred mbkType) csvContents
-           let maxLabelOffset = maxOffsetBKMap _map
-           putStrLn . DT.unpack  $ showBKMap maxLabelOffset _map
+    -> BKMap        -- ^ Contents of the CSV file
+    -> IO (Maybe BKMap)
+handleListBookmarks mbkType csvContents = 
+    do let _map = filterBKMap (pred mbkType) csvContents
+       let maxLabelOffset = maxOffsetBKMap _map
+       putStrLn . DT.unpack  $ showBKMap maxLabelOffset _map
+       return Nothing
     where
         pred :: Maybe BKType -> Bookmark -> Bool
         pred Nothing _ = True
@@ -352,4 +374,14 @@ handleListBookmarks mbkType = handler_ $
 -- | The main loop. 
 -- This is called by the `Main` module.
 mainLoop ::  IO ()
-mainLoop = OptA.execParser bkOpts >>= handleOpt
+mainLoop = do
+    bookmarkCSVFile <- initializeWorkDir     
+    (errs,csvContents) <- readCSVFile bookmarkCSVFile       
+    if null errs
+    then OptA.execParser (bkOpts csvContents) >>= \opt ->
+            do updatedMapM <- handleOpt opt csvContents
+               maybe (return ())
+                     (writeCSVFile bookmarkCSVFile)
+                     updatedMapM
+               exitSuccess
+    else print errs >> exitFailure

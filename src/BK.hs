@@ -6,9 +6,9 @@
 {-# LANGUAGE    OverloadedStrings #-}
 {-# LANGUAGE    ViewPatterns      #-}
 {-# OPTIONS_GHC -Wno-orphans      #-}
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 module BK 
-    (Bookmark(bkType,bkLabel, bkTarget, bkCreated, bkLastUsed),    
+    (BKMap,
+     Bookmark(bkType,bkLabel, bkTarget, bkCreated, bkLastUsed),    
      BKType(..),  
      bookmark,
      parseBKType,   
@@ -25,7 +25,9 @@ module BK
      showBKMap,
      maxOffsetBKMap,
      showBKType,
-     filterBKMap) where
+     filterBKMap,
+     filterLabels,
+     initializeWorkDir) where
 
 -- External Imports:
 import Prelude.Linear           (Show(..),
@@ -101,8 +103,8 @@ import qualified Data.Map                  as Map
 
 import qualified Lib  
 
-undefined :: a
-undefined = Prelude.undefined
+_undefined :: a
+_undefined = Prelude.undefined
 
 data BKType = BKAlias 
             | BKBookmark
@@ -205,8 +207,8 @@ instance Show Bookmark where
 instance FromRecord Bookmark
 instance ToRecord   Bookmark
 
-updateBookmarkType :: Bookmark -> BKType -> Bookmark
-updateBookmarkType (Bookmark _ bklabel bktarget bkcreated bklastused) bktype
+_updateBookmarkType :: Bookmark -> BKType -> Bookmark
+_updateBookmarkType (Bookmark _ bklabel bktarget bkcreated bklastused) bktype
     = Bookmark { 
         bkType     = bktype,          
         bkLabel    = bklabel, 
@@ -215,8 +217,8 @@ updateBookmarkType (Bookmark _ bklabel bktarget bkcreated bklastused) bktype
         bkLastUsed = bklastused 
     }
 
-updateBookmarkLabel :: Bookmark -> Text -> Bookmark
-updateBookmarkLabel (Bookmark bktype _ bktarget bkcreated bklastused) bklabel
+_updateBookmarkLabel :: Bookmark -> Text -> Bookmark
+_updateBookmarkLabel (Bookmark bktype _ bktarget bkcreated bklastused) bklabel
     = Bookmark { 
         bkType     = bktype,          
         bkLabel    = bklabel, 
@@ -235,8 +237,8 @@ updateBookmarkTarget (Bookmark bktype bklabel _ bkcreated bklastused) bktarget
         bkLastUsed = bklastused 
     }
 
-updateBookmarkCreated :: Bookmark -> Day -> Bookmark
-updateBookmarkCreated (Bookmark bktype bklabel bktarget _ bklastused) bkcreated
+_updateBookmarkCreated :: Bookmark -> Day -> Bookmark
+_updateBookmarkCreated (Bookmark bktype bklabel bktarget _ bklastused) bkcreated
     = Bookmark { 
         bkType     = bktype,          
         bkLabel    = bklabel, 
@@ -245,8 +247,8 @@ updateBookmarkCreated (Bookmark bktype bklabel bktarget _ bklastused) bkcreated
         bkLastUsed = bklastused 
     }
 
-updateBookmarkLastUsed :: Bookmark -> Day -> Bookmark
-updateBookmarkLastUsed (Bookmark bktype bklabel bktarget bkcreated _) bklastused
+_updateBookmarkLastUsed :: Bookmark -> Day -> Bookmark
+_updateBookmarkLastUsed (Bookmark bktype bklabel bktarget bkcreated _) bklastused
     = Bookmark { 
         bkType     = bktype,          
         bkLabel    = bklabel, 
@@ -326,6 +328,13 @@ filterBKMap pred bkMap = BKMap {
         _map = getBKMap bkMap
         newMap = Map.filter pred _map
         newMax = maxLabels newMap
+
+filterLabels 
+    :: (Text -> Bool)
+    -> BKMap
+    -> [Text]
+filterLabels filter (getBKMap->bkMap) = 
+    Map.keys $ Map.filter (filter . bkLabel) bkMap
 
 toAssocList :: BKMap -> [(Text,Bookmark)]
 toAssocList (BKMap _map _) = Map.assocs _map
@@ -504,7 +513,6 @@ initializeWorkDir = do
         writeCSVFile bookmarkCSVFile emptyBKMap
     return bookmarkCSVFile
 
--- Change (BKMap -> IO BKMap) to ((Int,BKMap) -> IO BKMap).
 _handler :: Bool -> (BKMap  -> IO BKMap) -> IO ()
 _handler writeMode action = 
     do bookmarkCSVFile <- initializeWorkDir     
