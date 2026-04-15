@@ -27,7 +27,8 @@ module BK.BKMap
      showBKType,
      filterBKMap,
      filterLabels,
-     initializeWorkDir) where
+     initializeWorkDir,
+     emptyBKMap) where
 
 -- External Imports:
 import Prelude.Linear           (Show(..),
@@ -90,7 +91,7 @@ import Data.Time.Format.ISO8601 (ISO8601 (iso8601Format),
                                  Format (formatShowM),
                                  formatParseM)
 
-import  Prelude
+import  Prelude                   qualified as Prelude
 import  Control.Functor.Linear    qualified as Linear
 import  System.IO.Resource.Linear qualified as Linear
 import  Data.Unrestricted.Linear  qualified as Linear

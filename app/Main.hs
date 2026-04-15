@@ -1,6 +1,6 @@
 module Main (main) where
 
-import TUI 
+import BK.TUI 
     (mainLoop)
 
 main :: IO ()
