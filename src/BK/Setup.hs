@@ -25,7 +25,7 @@ import BK.Lib   qualified as Lib
 -- Discovers the BK configuration, but if this is the first time running BK,
 -- then we enter an interactive setup process. 
 -- Nonrecoverable errors exit with failure.
-setup :: IO BkConfigFilePaths
+setup :: IO BKConfigPaths
 setup = do
   -- Get $BK_CONFIG_DIR from the environment, if it isn't set, then continue
   -- with $HOME as the config path.
@@ -41,20 +41,20 @@ exitFailureWithMsg msg = do
 
 -- | Supported configuration files.
 -- These are all stored under the @$CONFIG_DIR/bk@ directory.
-data BkConfigFilePaths = BKConfigFilePaths {
+data BKConfigPaths = BKConfigPaths {
   -- | Path to the configuration directory
   bkConfigDirectoryPath :: FilePath
   -- | Path to the TOML configuration file.
   ,bkConfigFile :: FilePath
   -- | Path to the booksmarks CSV file.
   ,bkBookmarksFile :: FilePath
-}
+} deriving Show
 
 -- | Returns the absolute paths to the config files.
-bkConfigFilePaths 
+bkConfigPaths 
   :: FilePath          -- ^ Path to the configuration directory
-  -> BkConfigFilePaths
-bkConfigFilePaths configDir = BKConfigFilePaths {
+  -> BKConfigPaths
+bkConfigPaths configDir = BKConfigPaths {
    bkConfigDirectoryPath = configDir
   ,bkConfigFile          = configDir </> "bk.toml"
   ,bkBookmarksFile       = configDir </> "bookmarks.csv"
@@ -64,22 +64,22 @@ bkConfigFilePaths configDir = BKConfigFilePaths {
 getBKConfigFilePath 
   :: FilePath -- ^ Path to the configuration directory
   -> FilePath
-getBKConfigFilePath = bkConfigFile . bkConfigFilePaths
+getBKConfigFilePath = bkConfigFile . bkConfigPaths
 
 -- | Convenience function for building the path to the bookmarks CSV file.
 getBKBookmarksFilePath 
   :: FilePath -- ^ Path to the configuration directory
   -> FilePath
-getBKBookmarksFilePath = bkBookmarksFile . bkConfigFilePaths
+getBKBookmarksFilePath = bkBookmarksFile . bkConfigPaths
 
 -- | Tests whether all of the configuration files exist in the configuration directory.
 doConfigFilesExist 
-  :: FilePath                     -- ^ Path to the configuration directory
-  -> IO (Maybe BkConfigFilePaths) -- ^ Absolute paths to all of the configuration files.
+  :: FilePath                 -- ^ Path to the configuration directory
+  -> IO (Maybe BKConfigPaths) -- ^ Absolute paths to all of the configuration files.
 doConfigFilesExist configDir = do
   d <- Lib.doesDirectoryExist configDir  
   if d
-  then do let configFilesPaths = BKConfigFilePaths { 
+  then do let configFilesPaths = BKConfigPaths { 
                  bkConfigDirectoryPath = configDir
                 ,bkConfigFile          = (getBKConfigFilePath    configDir) 
                 ,bkBookmarksFile       = (getBKBookmarksFilePath configDir) 
@@ -96,31 +96,33 @@ doConfigFilesExist configDir = do
 -- initializing the configuration directory.
 continueSetup 
   :: FilePath    -- ^ Path to the configuration directory.
-  -> IO BkConfigFilePaths
+  -> IO BKConfigPaths
 continueSetup configDir = 
       doConfigFilesExist configDir 
   >>= maybe interactiveSetup return  
 
-isYesResponse :: Char -> Bool
-isYesResponse '\n' = True
-isYesResponse 'y' = True
-isYesResponse 'Y' = True
+isYesResponse :: String -> Bool
+isYesResponse "" = True
+isYesResponse "y"= True
+isYesResponse "Y"= True
 isYesResponse _   = False
 
-isNoResponse :: Char -> Bool
-isNoResponse 'n' = True
-isNoResponse 'N' = True
+isNoResponse :: String -> Bool
+isNoResponse "" = True
+isNoResponse "N" = True
+isNoResponse "n" = True
 isNoResponse _   = False
 
 promptYesNo :: Text -> HL.InputT IO r -> HL.InputT IO r -> HL.InputT IO r
-promptYesNo promptPrefix g f = do
-  let prompt = promptPrefix <> "[Yn]? "
-  (HL.getInputChar $ DT.unpack prompt) >>= maybe (promptYesNo prompt f g)
-      (\c -> if isYesResponse c
-             then f
-             else if isNoResponse c
-                  then g
-                  else promptYesNo prompt f g)
+promptYesNo promptPrefix g f = loop
+  where
+    prompt = promptPrefix <> " [Yn]? "
+    loop = do (HL.getInputLine $ DT.unpack prompt) >>= maybe loop
+                (\c -> if isYesResponse c
+                       then f
+                       else if isNoResponse c
+                            then g
+                            else loop)    
 
 -- | Prompts for a directory path.
 -- Checks to see if the directory exists before returning. If it doesn't exist,
@@ -131,31 +133,31 @@ promptForFilePath
   -> HL.InputT IO FilePath
 promptForFilePath prefix defaultValue = _promptForFilePath 
   where
+    prompt = DT.unpack prefix <> " ["<>defaultValue<>"]" <> "? "
     _promptForFilePath = do
-      let prompt = DT.unpack prefix <> "? "
-      HL.getInputLineWithInitial prompt (defaultValue,"") >>= maybe _promptForFilePath
+      HL.getInputLine prompt >>= maybe _promptForFilePath
         (\s -> case s of 
                 "" -> return defaultValue
                 _ -> do b <- liftIO $ Lib.doesDirectoryExist s
                         if b
                         then return s
-                        else do liftIO $ Lib.putStrLnStdOut "directory doesn't exist"
+                        else do liftIO $ Lib.putStrLnStdOut "\nPlease choose a directory that exists."
                                 _promptForFilePath)
 
 -- | Interactive setup that configures @bk@ for the first time.
-interactiveSetup :: IO BkConfigFilePaths
+interactiveSetup :: IO BKConfigPaths
 interactiveSetup = HL.runInputT HL.defaultSettings $ loop 
   where     
     loop = do
-      liftIO $ Lib.putStrLnStdOut $ "Welcome to the Beekeeper (bk) Interactive Setup!"
+      liftIO $ Lib.putStrLnStdOut $ "Welcome to the Beekeeper (bk) Interactive Setup!\n"
       promptYesNo 
-        "Is this the first time running bk?"
+        "Is this the first time running bk"
         (liftIO $ exitFailureWithMsg secondRunMessage) $
           do homedir <- liftIO Lib.getHomeDirectory
              configDirParent <- promptForFilePath 
-                                  "Enter the directory where you would like to store bk's configuration files" 
+                                  "Enter the directory where you would like to store bk's configuration directory" 
                                   homedir
-             let configFilePaths = bkConfigFilePaths $ configDirParent </> "bk"
+             let configFilePaths = bkConfigPaths $ configDirParent </> "bk"
              liftIO $ initializeWorkDir configFilePaths
              return configFilePaths
   
@@ -166,7 +168,8 @@ interactiveSetup = HL.runInputT HL.defaultSettings $ loop
       <> "longer read the environment variable $BK_CONFIG_DIR.\n\n"
       <> "Please check that your shells configuration is exporting $BK_CONFIG_DIR"
 
-initializeWorkDir :: BkConfigFilePaths -> IO ()
+initializeWorkDir :: BKConfigPaths -> IO ()
 initializeWorkDir configFilesPaths = do 
-    Lib.createDirectoryIfMissing False $ bkConfigDirectoryPath configFilesPaths    
-    BK.writeCSVFile (bkBookmarksFile configFilesPaths) BK.emptyBKMap
+    return ()
+    --Lib.createDirectoryIfMissing False $ bkConfigDirectoryPath configFilesPaths    
+    --BK.writeCSVFile (bkBookmarksFile configFilesPaths) BK.emptyBKMap
