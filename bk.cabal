@@ -42,6 +42,7 @@ library
   default-extensions:
       ImportQualifiedPost
     , OverloadedStrings
+    , ViewPatterns
   build-depends:
     , base                 >=4.7       && <5
     , filepath             >=1.5       && <1.6
