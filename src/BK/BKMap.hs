@@ -511,7 +511,7 @@ initializeWorkDir :: IO FilePath
 initializeWorkDir = do 
     homeDir <- Lib.getHomeDirectory
     let wdir = homeDir <> "/.bk"
-    let bookmarkCSVFile = wdir <> "/bk-bookmarks.csv"
+    let bookmarkCSVFile = wdir <> "/bookmarks.csv"
     Lib.createDirectoryIfMissing False wdir
     bookmarkCSVFileExists <- Lib.doesFileExist bookmarkCSVFile
     when (not bookmarkCSVFileExists) $ 

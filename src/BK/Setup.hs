@@ -18,8 +18,13 @@ import qualified System.Console.Haskeline as HL
 -- | * Internal Imports
 import BK.BKMap qualified as BK
 import BK.Lib   qualified as Lib
+import Control.Monad (when)
 
 -- | * Setup
+
+-- | Set to @True@ to turn on debug logging.
+_debugSetup :: Bool
+_debugSetup = False
 
 -- | Setup BK.
 -- Discovers the BK configuration, but if this is the first time running BK,
@@ -42,11 +47,9 @@ exitFailureWithMsg msg = do
 -- | Supported configuration files.
 -- These are all stored under the @$CONFIG_DIR/bk@ directory.
 data BKConfigPaths = BKConfigPaths {
-  -- | Path to the configuration directory
-  bkConfigDirectoryPath :: FilePath
-  -- | Path to the TOML configuration file.
-  ,bkConfigFile :: FilePath
-  -- | Path to the booksmarks CSV file.
+   -- | Path to the configuration directory
+   bkConfigDirectoryPath :: FilePath
+   -- | Path to the booksmarks CSV file.
   ,bkBookmarksFile :: FilePath
 } deriving Show
 
@@ -56,15 +59,8 @@ bkConfigPaths
   -> BKConfigPaths
 bkConfigPaths configDir = BKConfigPaths {
    bkConfigDirectoryPath = configDir
-  ,bkConfigFile          = configDir </> "bk.toml"
   ,bkBookmarksFile       = configDir </> "bookmarks.csv"
 }
-
--- | Convenience function for building the path to the TOML configuration file.
-getBKConfigFilePath 
-  :: FilePath -- ^ Path to the configuration directory
-  -> FilePath
-getBKConfigFilePath = bkConfigFile . bkConfigPaths
 
 -- | Convenience function for building the path to the bookmarks CSV file.
 getBKBookmarksFilePath 
@@ -74,32 +70,33 @@ getBKBookmarksFilePath = bkBookmarksFile . bkConfigPaths
 
 -- | Tests whether all of the configuration files exist in the configuration directory.
 doConfigFilesExist 
-  :: FilePath                 -- ^ Path to the configuration directory
-  -> IO (Maybe BKConfigPaths) -- ^ Absolute paths to all of the configuration files.
+  :: FilePath                       -- ^ Path to the configuration directory
+  -> IO (Either Text BKConfigPaths) -- ^ Absolute paths to all of the configuration files.
 doConfigFilesExist configDir = do
   d <- Lib.doesDirectoryExist configDir  
   if d
   then do let configFilesPaths = BKConfigPaths { 
                  bkConfigDirectoryPath = configDir
-                ,bkConfigFile          = (getBKConfigFilePath    configDir) 
                 ,bkBookmarksFile       = (getBKBookmarksFilePath configDir) 
               }
-          f1 <- Lib.doesFileExist $ bkConfigFile configFilesPaths 
           f2 <- Lib.doesFileExist $ bkBookmarksFile configFilesPaths
-          return $ if f1 && f2
-                   then Just $ configFilesPaths
-                   else Nothing
-  else return Nothing
+          return $ if f2
+                   then Right $ configFilesPaths
+                   else Left "missing CSV file"
+  else return . Left $ "no such file or directory '"<>DT.pack configDir<>"'"
 
 -- | Continues the setup to either an interactive setup if this is the first
 -- time running @bk@ and initializing the configuration directory, or just
--- initializing the configuration directory.
+-- initializing the configuration paths.
 continueSetup 
   :: FilePath    -- ^ Path to the configuration directory.
   -> IO BKConfigPaths
-continueSetup configDir = 
-      doConfigFilesExist configDir 
-  >>= maybe interactiveSetup return  
+continueSetup configDir = doConfigFilesExist configDir        
+                      >>= either goInteractive return  
+  where
+    goInteractive errMsg = do
+      when _debugSetup (Lib.putStrLnStdErr errMsg)
+      interactiveSetup
 
 isYesResponse :: String -> Bool
 isYesResponse "" = True
@@ -170,6 +167,12 @@ interactiveSetup = HL.runInputT HL.defaultSettings $ loop
 
 initializeWorkDir :: BKConfigPaths -> IO ()
 initializeWorkDir configFilesPaths = do 
-    return ()
-    --Lib.createDirectoryIfMissing False $ bkConfigDirectoryPath configFilesPaths    
-    --BK.writeCSVFile (bkBookmarksFile configFilesPaths) BK.emptyBKMap
+    let configDir = bkConfigDirectoryPath configFilesPaths
+    let csvFile   = bkBookmarksFile       configFilesPaths
+    Lib.createDirectoryIfMissing False configDir    
+    b <- Lib.doesFileExist csvFile
+    when b $ do exitFailureWithMsg $ "Aborting setup!\n"
+                                  <> "It seems bk is already setup, because " 
+                                  <> DT.pack csvFile
+                                  <> " already exists."
+    BK.writeCSVFile csvFile BK.emptyBKMap
