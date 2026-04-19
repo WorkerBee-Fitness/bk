@@ -10,15 +10,20 @@ module BK.Lib
     putStrLnStdOut,
     putStrLnStdErr,
     andF,
-    orF) where
+    orF,
+    tomlResult,
+    concatErrors,
+    left,
+    right) where
 
-import qualified Data.ByteString      as BS
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.UTF8 as BSU
-import qualified Data.Text            as DT
-import qualified Data.Text.Encoding   as TSE
-import qualified System.FilePath      as System.FP
-import qualified System.Directory     as System.Dir
+import Data.ByteString      qualified as BS
+import Data.ByteString.Lazy qualified as BL
+import Data.ByteString.UTF8 qualified as BSU
+import Data.Text            qualified as DT
+import Data.Text.Encoding   qualified as TSE
+import System.FilePath      qualified as System.FP
+import System.Directory     qualified as System.Dir
+import Toml                 qualified as Toml
 
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.List              (isPrefixOf)
@@ -26,6 +31,7 @@ import System.FilePath        ((</>))
 import Data.Text.IO           (hPutStrLn)
 import System.IO              (stderr, 
                                stdout)
+import Data.Bool (bool)
 
 putStrLnStdErr 
     :: DT.Text 
@@ -93,8 +99,36 @@ expandHomeDirectory homedir (System.FP.normalise->path)
 expandHomeDirectory _ path = path
 
 -- Booleans:
+
 andF :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
 andF f g x = (f x) && (g x)
 
 orF :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
 orF f g x = (f x) || (g x)
+
+-- * Toml helpers
+tomlResult :: Toml.Result e a -> ([e] -> r) -> ([e] -> a -> r) -> r
+tomlResult (Toml.Failure e)   f _ = f e
+tomlResult (Toml.Success e a) _ s = s e a
+
+-- * String Helpers
+
+-- | Concats a list of strings separating each one by `sep`.
+strConcatSep 
+    :: DT.Text   -- ^ Separator
+    -> [String] -- ^ Strings to concat
+    -> DT.Text
+strConcatSep sep = foldl (\acc s -> DT.pack s <> sep <> acc) "" 
+
+-- | Concats a list of warnings as @String@ using a newline separator.
+concatErrors 
+    :: [String] -- ^ List of warnings
+    -> DT.Text
+concatErrors = strConcatSep "\n"
+
+-- | Either helpers
+left :: Applicative m => e -> m (Either e r)
+left = pure . Left
+
+right :: Applicative m => r -> m (Either e r)
+right = pure . Right
