@@ -32,14 +32,14 @@ import Data.Bool (bool)
 
 -- | Debugging configuration
 data DebugConfig = DebugConfig {
-  bkDebugWorkDir :: Maybe FilePath -- ^ Location of testing programming data
+  confDebugWorkDirectory :: Maybe FilePath -- ^ Location of testing programming data
 } deriving (Eq, Show, Generic)
   deriving (Toml.ToValue) via Toml.GenericTomlTable DebugConfig
 
 -- | BK config file format
 data ConfigFile = ConfigFile {
-   bkDebugConfig :: Maybe DebugConfig  -- ^ Hidden debugging options
-  ,bkWorkDir     :: FilePath           -- ^ Location to store program data
+   confDebug         :: Maybe DebugConfig  -- ^ Hidden debugging options
+  ,confWorkDirectory :: FilePath           -- ^ Location to store program data
 } deriving (Eq, Show, Generic)
   deriving (Toml.ToValue) via Toml.GenericTomlTable ConfigFile
 
@@ -73,9 +73,114 @@ parseConfigFile = do
                              <> singleQuote (DT.pack pathToConfigFile)
 
 -- | * Setup
+-- The setup process proceeds following the flow chart below:
+--
+--                                           _______
+--                                          | setup |
+--                                           -------
+--                                              |
+--                                   ? does config file exist ?
+--                                              |
+--                                     ___yes___|___no___
+--                                    |                  |
+--                                    |                  |
+--                          ? valid config file ?        |
+--                                    |                  |
+--                           ___yes___|___no___          |
+--                          |                  |         |
+--                     contents of       ! invalid     ! |
+--                     config file       ! config file ! |
+--                          |                            |
+--                   _______________                     | 
+--                  | continueSetup |                    |
+--                   ---------------                     |
+--                         |                             |
+--                    ____________                       |
+--                   | getWorkDir |                      |
+--                   -------------                       |
+--                         |                             |
+--                 ? debugging workDir ?                 |
+--                         |                             |
+--                 __yes___|___no____                    |
+--                |                  |                   |
+--  _____________________     ___________________        |
+-- | workDir =            |  |  workDir =        |       |
+-- | debug.work-directory |  |  = work-directory |       |
+--  ----------------------    -------------------        |
+--      |____________|______________|                    |
+--                   |                                   |
+--           ? work dir exist ?                          |
+--                   |                                   |
+--          ___yes___|___no____                          | 
+--         |                   |                         |
+--     __________              |                         |          
+--    |  setup    |            |                         |   
+--    | complete  |            |                         |
+--    |  return   |            |                         |
+--    | paths to  |            |                         |
+--    | existing  |            |                         |
+--    |  config   |            |                         |
+--    |  file +   |            |                         |
+--    | program   |            |                         |
+--    | directory |            |                         |
+--     ----------              |_____go interactive______|       
+--                                          |                    
+--                                     -----
+--                                    |
+--                            __________________                
+--                           | interactiveSetup |              
+--                            ------------------            
+--                                   |                     
+--                        ############################    
+--                        # > first time running bk? #    
+--                        #############|##############   
+--                                     |                 
+--                            ___yes___|___no_________         
+--                           |                        |     
+--                    ? contents of ?          ? contents of ?
+--                    ? config file ?          ? config file ? 
+--                 __________|                        |          
+--        __yes___|___no____________         ___yes___|___no____                               
+--       |                          |       |                   |       
+--    contents of                   |  ! program      !   ! config       !
+--    config file                   |  ! data is      !   ! file is      !
+--       |                          |  ! inaccessible !   ! inaccessible !
+--       |                          |    
+--       |                          | 
+--       |                          | 
+--       |                          | 
+--       |                          |           
+--       |        ##################|###################
+--       |        # > directory to store program data? #
+--       |        ##################|###################
+--       |                          |
+--       |        ___path entered___|_____default '~/.bk/'__
+--       |       |                                          |
+--       |        ------------------|-----------------------
+--       |                          |
+--       |         #################|##############
+--       |         # > which shell to initialize? #
+--       |         #################|##############
+--       |                          |
+--       |                    fresh config
+--       |                    file contents
+--       |                          |
+--        --------------------------|
+--                      ____________|______________
+--                     | initialize work directory |
+--                      ---------------------------
+--                                  
+--
+--                                             
+---- TODOs:
+-- 1. Add "debug-mode" flag to TOML so that we can safe debug options, but turn
+--    them off without having to delete them.
+-- 2. Add shell to TOML config file.
+-- 3. Add shell to BKConfig.
+-- 4. Set _debugSetup based on the config file.
+
 
 -- | Set to @True@ to turn on debug logging.
-
 _debugSetup :: Bool
 _debugSetup = False
 
@@ -83,7 +188,7 @@ _debugSetup = False
 -- Discovers the BK configuration, but if this is the first time running BK,
 -- then we enter an interactive setup process. 
 -- Nonrecoverable errors exit with failure.
-setup :: IO BKConfigPaths
+setup :: IO BKConfig
 setup = do
   -- Parse the config file:     
     either 
@@ -98,7 +203,7 @@ exitFailureWithMsg msg = do
 
 -- | Supported configuration files.
 -- These are all stored under the @$CONFIG_DIR/bk@ directory.
-data BKConfigPaths = BKConfigPaths {
+data BKConfig = BKConfig {
    -- | Path to the configuration directory
    bkConfigDirectoryPath :: FilePath
    -- | Path to the booksmarks CSV file.
@@ -108,8 +213,8 @@ data BKConfigPaths = BKConfigPaths {
 -- | Returns the absolute paths to the config files.
 bkConfigPaths 
   :: FilePath          -- ^ Path to the configuration directory
-  -> BKConfigPaths
-bkConfigPaths configDir = BKConfigPaths {
+  -> BKConfig
+bkConfigPaths configDir = BKConfig {
    bkConfigDirectoryPath = configDir
   ,bkBookmarksFile       = configDir </> "bookmarks.csv"
 }
@@ -121,13 +226,13 @@ getBKBookmarksFilePath
 getBKBookmarksFilePath = bkBookmarksFile . bkConfigPaths
 
 -- | Tests whether all of the configuration files exist in the configuration directory.
-doConfigFilesExist 
+doesProgramDataExist 
   :: FilePath                       -- ^ Path to the configuration directory
-  -> IO (Either Text BKConfigPaths) -- ^ Absolute paths to all of the configuration files.
-doConfigFilesExist configDir = do
+  -> IO (Either Text BKConfig) -- ^ Absolute paths to all of the configuration files.
+doesProgramDataExist configDir = do
   d <- Lib.doesDirectoryExist configDir  
   if d
-  then do let configFilesPaths = BKConfigPaths { 
+  then do let configFilesPaths = BKConfig { 
                  bkConfigDirectoryPath = configDir
                 ,bkBookmarksFile       = (getBKBookmarksFilePath configDir) 
               }
@@ -146,9 +251,9 @@ getWorkDir (ConfigFile _ wd) = wd
 -- initializing the configuration paths.
 continueSetup 
   :: ConfigFile   -- ^ Configuration file contents
-  -> IO BKConfigPaths
+  -> IO BKConfig
 continueSetup configFile = 
-        doConfigFilesExist (getWorkDir configFile) 
+        doesProgramDataExist (getWorkDir configFile) 
           >>= either goInteractive return  
   where
     goInteractive errMsg = do
@@ -238,10 +343,10 @@ parseShellEnvar :: String -> Maybe Shell
 parseShellEnvar (takeFileName->"zsh")  = Just Zsh
 parseShellEnvar (takeFileName->"bash") = Just Bash
 parseShellEnvar (takeFileName->"fish") = Just Fish
-parseShellEnvar _                                 = Nothing
+parseShellEnvar _                      = Nothing
 
 -- | Interactive setup that configures @bk@ for the first time.
-interactiveSetup :: Maybe ConfigFile -> IO BKConfigPaths
+interactiveSetup :: Maybe ConfigFile -> IO BKConfig
 interactiveSetup configFileM = HL.runInputT HL.defaultSettings $ loop 
   where     
     loop = do
@@ -261,17 +366,17 @@ interactiveSetup configFileM = HL.runInputT HL.defaultSettings $ loop
              -- path from the configuration file. Then set bkConfigPaths based
              -- on the config file. 
              --
-             -- Maybe create a promptForConfigFile that returns a BKConfigPaths
+             -- Maybe create a promptForConfigFile that returns a BKConfig
              -- based on the above reasoning. I think this would be cleaner.
              configDirParent <- promptForFilePath 
-                                  "Enter the directory where you would like to store bk's configuration directory" 
+                                  "Enter the directory where you would like to store bk's program data?" 
                                   homedir             
              let configFilePaths = bkConfigPaths $ configDirParent 
                                </> if configDirParent == homedir
                                    then ".bk"
                                    else "bk"
              shell <- promptForShell "Which shell should be initialized"
-             liftIO $ initializeConfigDir configFilePaths shell
+             --liftIO $ initializeConfigDir configFilePaths shell
              return configFilePaths
   
     secondRunMessage :: (Maybe ConfigFile,FilePath) -> Text
@@ -287,7 +392,7 @@ interactiveSetup configFileM = HL.runInputT HL.defaultSettings $ loop
       <> ", because the configuration file "<>singleQuote (DT.pack configFilePath)
       <> " exists."
 
-initializeConfigDir :: BKConfigPaths -> Shell -> IO ()
+initializeConfigDir :: BKConfig -> Shell -> IO ()
 initializeConfigDir configFilesPaths sh = do 
     let configDir = bkConfigDirectoryPath configFilesPaths
     let csvFile   = bkBookmarksFile       configFilesPaths
@@ -343,7 +448,7 @@ updateZshFPath (DT.pack->dir) = "fpath=("<>doubleQuote dir<>" $fpath)"
 compinitZsh :: Text
 compinitZsh = "autoload -Uz compinit && compinit"
 
-completionsDirPath :: FilePath -> BKConfigPaths -> Shell -> FilePath
+completionsDirPath :: FilePath -> BKConfig -> Shell -> FilePath
 completionsDirPath homedir _ Fish = 
       homedir 
   </> ".config" 
@@ -353,7 +458,7 @@ completionsDirPath _ configPaths _ =
   let configDir = bkConfigDirectoryPath configPaths       
    in configDir </> "completions"
 
-initShellScript :: FilePath -> BKConfigPaths -> Shell -> Text
+initShellScript :: FilePath -> BKConfig -> Shell -> Text
 initShellScript homedir configPaths = _initShellScript
   where
     configDir = DT.pack $ bkConfigDirectoryPath configPaths     
@@ -369,5 +474,5 @@ initShellScript homedir configPaths = _initShellScript
                             <> compinitZsh
     _initShellScript _ = undefined
 
-initShell :: Shell -> BKConfigPaths -> IO ()
+initShell :: Shell -> BKConfig -> IO ()
 initShell shell configPaths = undefined
