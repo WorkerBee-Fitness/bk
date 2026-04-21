@@ -1,0 +1,135 @@
+<svg xmlns='http://www.w3.org/2000/svg' style='font-size:initial;' class="setup diagram" viewBox="0 0 1753.92 799.92">
+<circle cx="470.16" cy="41.76" r="36"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="470.16" y="41.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">setup</text>
+<path d="M398.16,203.76L470.16,257.76L542.16,203.76L470.16,149.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="470.16" y="193.68" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">does config</text>
+<text x="470.16" y="213.84" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">file exist?</text>
+<polygon points="470.16,149.76 465.84,138.24 474.48,138.24" style="fill:rgb(0,0,0)"/>
+<path d="M470.16,77.76L470.16,144"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M182.16,203.76L254.16,257.76L326.16,203.76L254.16,149.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="254.16" y="193.68" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">valid</text>
+<text x="254.16" y="213.84" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">config file?</text>
+<polygon points="326.16,203.76 337.68,199.44 337.68,208.08" style="fill:rgb(0,0,0)"/>
+<path d="M398.16,203.76L331.92,203.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="362.16" y="192.06" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">yes</text>
+<ellipse cx="56.16" cy="203.76" rx="54" ry="36"  style="fill:rgb(255,192,203);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="56.16" y="193.68" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">invalid</text>
+<text x="56.16" y="213.84" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">config file</text>
+<polygon points="110.16,203.76 121.68,199.44 121.68,208.08" style="fill:rgb(0,0,0)"/>
+<path d="M182.16,203.76L115.92,203.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="146.16" y="192.06" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">no</text>
+<path d="M200.16,401.76L308.16,401.76L308.16,329.76L200.16,329.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="254.16" y="365.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">continueSetup</text>
+<polygon points="254.16,329.76 249.84,318.24 258.48,318.24" style="fill:rgb(0,0,0)"/>
+<path d="M254.16,257.76L254.16,324"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="254.16" y="282.06" text-anchor="start" fill="rgb(0,0,0)" dominant-baseline="central"> contents of</text>
+<text x="254.16" y="305.46" text-anchor="start" fill="rgb(0,0,0)" dominant-baseline="central"> config file</text>
+<path d="M200.16,545.76L308.16,545.76L308.16,473.76L200.16,473.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="254.16" y="509.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">getWorkDir</text>
+<polygon points="254.16,473.76 249.84,462.24 258.48,462.24" style="fill:rgb(0,0,0)"/>
+<path d="M254.16,401.76L254.16,468"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M182.16,671.76L254.16,725.76L326.16,671.76L254.16,617.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="254.16" y="671.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">debug mode?</text>
+<polygon points="254.16,617.76 249.84,606.24 258.48,606.24" style="fill:rgb(0,0,0)"/>
+<path d="M254.16,545.76L254.16,612"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M398.16,671.76L470.16,725.76L542.16,671.76L470.16,617.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="470.16" y="651.6" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">debug.</text>
+<text x="470.16" y="671.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">work-directory</text>
+<text x="470.16" y="691.92" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">set?</text>
+<polygon points="398.16,671.76 386.64,676.08 386.64,667.44" style="fill:rgb(0,0,0)"/>
+<path d="M326.16,671.76L392.4,671.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="362.16" y="660.06" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">yes</text>
+<path d="M416.16,545.76L524.16,545.76L524.16,459.36L416.16,459.36Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="470.16" y="482.4" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">set workDir =</text>
+<text x="470.16" y="502.56" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">debug.</text>
+<text x="470.16" y="522.72" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">work-directory</text>
+<polygon points="470.16,545.76 474.48,557.28 465.84,557.28" style="fill:rgb(0,0,0)"/>
+<path d="M470.16,617.76L470.16,551.52"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="470.16" y="581.76" text-anchor="start" fill="rgb(0,0,0)" dominant-baseline="central"> yes</text>
+<path d="M614.16,707.76L722.16,707.76L722.16,635.76L614.16,635.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="668.16" y="661.68" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">set workDir =</text>
+<text x="668.16" y="681.84" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">work-directory</text>
+<polygon points="614.16,671.76 602.64,676.08 602.64,667.44" style="fill:rgb(0,0,0)"/>
+<path d="M542.16,671.76L608.4,671.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="578.16" y="660.06" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">no</text>
+<path d="M596.16,502.56L668.16,556.56L740.16,502.56L668.16,448.56Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="668.16" y="502.56" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">workDir exist?</text>
+<polygon points="668.16,556.56 672.48,568.08 663.84,568.08" style="fill:rgb(0,0,0)"/>
+<path d="M668.16,635.76L668.16,562.32"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<polygon points="596.16,502.56 584.64,506.88 584.64,498.24" style="fill:rgb(0,0,0)"/>
+<path d="M524.16,502.56L590.4,502.56"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<polygon points="668.16,707.76 672.48,719.28 663.84,719.28" style="fill:rgb(0,0,0)"/>
+<path d="M254.16,725.76L254.16,797.76L668.16,797.76L668.16,713.52"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(0,0,0);" />
+<text x="275.76" y="756.36" text-anchor="end" fill="rgb(0,0,0)" dominant-baseline="central">no</text>
+<ellipse cx="884.16" cy="502.56" rx="72" ry="72"  style="fill:rgb(144,238,144);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="884.16" y="462.24" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">return paths</text>
+<text x="884.16" y="482.4" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">to existing</text>
+<text x="884.16" y="502.56" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">config file</text>
+<text x="884.16" y="522.72" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">and</text>
+<text x="884.16" y="542.88" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">program data</text>
+<polygon points="812.16,502.56 800.64,506.88 800.64,498.24" style="fill:rgb(0,0,0)"/>
+<path d="M740.16,502.56L806.4,502.56"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="776.16" y="490.86" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">yes</text>
+<path d="M614.16,239.76L729.36,239.76L729.36,167.76L614.16,167.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="671.76" y="203.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">interactiveSetup</text>
+<polygon points="671.76,239.76 675.881,251.353 667.242,251.204" style="fill:rgb(0,0,0)"/>
+<path d="M668.16,448.56L671.661,245.519"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="669.96" y="344.16" text-anchor="start" fill="rgb(0,0,0)" dominant-baseline="central"> no</text>
+<polygon points="614.16,203.76 602.64,208.08 602.64,199.44" style="fill:rgb(0,0,0)"/>
+<path d="M542.16,203.76L608.4,203.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="578.16" y="192.06" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">no</text>
+<path d="M801.36,203.76L873.36,257.76L945.36,203.76L873.36,149.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="873.36" y="193.68" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">&gt; first time</text>
+<text x="873.36" y="213.84" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">running bk?</text>
+<polygon points="801.36,203.76 789.84,208.08 789.84,199.44" style="fill:rgb(0,0,0)"/>
+<path d="M729.36,203.76L795.6,203.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M1017.36,203.76L1089.36,257.76L1161.36,203.76L1089.36,149.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1089.36" y="203.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Config file given?</text>
+<path d="M1017.36,383.76L1089.36,437.76L1161.36,383.76L1089.36,329.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1089.36" y="383.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Config file given?</text>
+<polygon points="1017.36,383.76 1005.84,388.08 1005.84,379.44" style="fill:rgb(0,0,0)"/>
+<path d="M873.36,257.76L873.36,383.76L1011.6,383.76"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(0,0,0);" />
+<text x="894.96" y="273.96" text-anchor="end" fill="rgb(0,0,0)" dominant-baseline="central">no</text>
+<polygon points="1017.36,203.76 1005.84,208.08 1005.84,199.44" style="fill:rgb(0,0,0)"/>
+<path d="M945.36,203.76L1011.6,203.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="981.36" y="192.06" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">yes</text>
+<ellipse cx="1089.36" cy="545.76" rx="64.8" ry="36"  style="fill:rgb(255,192,203);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1089.36" y="535.68" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">program data</text>
+<text x="1089.36" y="555.84" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">is inaccessible</text>
+<ellipse cx="1089.36" cy="653.76" rx="64.8" ry="36"  style="fill:rgb(255,192,203);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1089.36" y="643.68" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">config file</text>
+<text x="1089.36" y="663.84" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">is inaccessible</text>
+<polygon points="1089.36,509.76 1085.04,498.24 1093.68,498.24" style="fill:rgb(0,0,0)"/>
+<path d="M1089.36,437.76L1089.36,504"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1089.36" y="473.76" text-anchor="start" fill="rgb(0,0,0)" dominant-baseline="central"> yes</text>
+<polygon points="1154.16,653.76 1165.68,649.44 1165.68,658.08" style="fill:rgb(0,0,0)"/>
+<path d="M1161.36,383.76L1204.56,383.76L1204.56,653.76L1159.92,653.76"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(0,0,0);" />
+<text x="1190.16" y="373.68" text-anchor="end" fill="rgb(0,0,0)" dominant-baseline="central">no</text>
+<path d="M1233.36,261.36L1348.56,261.36L1348.56,146.16L1233.36,146.16Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1290.96" y="183.6" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">&gt; directory to</text>
+<text x="1290.96" y="203.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">store program</text>
+<text x="1290.96" y="223.92" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">data?</text>
+<polygon points="1233.36,203.76 1221.84,208.08 1221.84,199.44" style="fill:rgb(0,0,0)"/>
+<path d="M1161.36,203.76L1227.6,203.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1197.36" y="192.06" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">no</text>
+<path d="M1236.96,74.16L1344.96,74.16L1344.96,2.16L1236.96,2.16Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1290.96" y="38.16" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">path entered</text>
+<path d="M1236.96,405.36L1344.96,405.36L1344.96,333.36L1236.96,333.36Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1290.96" y="369.36" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">default: '~/.bk/'</text>
+<polygon points="1290.96,74.16 1295.28,85.68 1286.64,85.68" style="fill:rgb(0,0,0)"/>
+<path d="M1290.96,146.16L1290.96,79.92"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<polygon points="1290.96,333.36 1286.64,321.84 1295.28,321.84" style="fill:rgb(0,0,0)"/>
+<path d="M1290.96,261.36L1290.96,327.6"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M1420.56,261.36L1535.76,261.36L1535.76,146.16L1420.56,146.16Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1478.16" y="193.68" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">&gt; which shell</text>
+<text x="1478.16" y="213.84" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">to initialize?</text>
+<polygon points="1478.16,146.16 1473.84,134.64 1482.48,134.64" style="fill:rgb(0,0,0)"/>
+<path d="M1344.96,38.16L1478.16,38.16L1478.16,140.4"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(0,0,0);" />
+<polygon points="1478.16,261.36 1482.48,272.88 1473.84,272.88" style="fill:rgb(0,0,0)"/>
+<path d="M1344.96,369.36L1478.16,369.36L1478.16,267.12"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(0,0,0);" />
+<path d="M1607.76,203.76L1679.76,257.76L1751.76,203.76L1679.76,149.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1679.76" y="193.68" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">valid shell</text>
+<text x="1679.76" y="213.84" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">entered?</text>
+<polygon points="1607.76,203.76 1596.24,208.08 1596.24,199.44" style="fill:rgb(0,0,0)"/>
+<path d="M1535.76,203.76L1602,203.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+</svg>

@@ -73,6 +73,16 @@ parseConfigFile = do
                              <> singleQuote (DT.pack pathToConfigFile)
 
 -- | * Setup
+
+-- | Set to @True@ to turn on debug logging.
+_debugSetup :: Bool
+_debugSetup = False
+
+-- | Setup BK.
+-- Discovers the BK configuration, but if this is the first time running BK,
+-- then we enter an interactive setup process. 
+-- Nonrecoverable errors exit with failure.
+--
 -- The setup process proceeds following the flow chart below:
 --
 --                                           _______
@@ -172,22 +182,6 @@ parseConfigFile = do
 --                                  
 --
 --                                             
----- TODOs:
--- 1. Add "debug-mode" flag to TOML so that we can safe debug options, but turn
---    them off without having to delete them.
--- 2. Add shell to TOML config file.
--- 3. Add shell to BKConfig.
--- 4. Set _debugSetup based on the config file.
-
-
--- | Set to @True@ to turn on debug logging.
-_debugSetup :: Bool
-_debugSetup = False
-
--- | Setup BK.
--- Discovers the BK configuration, but if this is the first time running BK,
--- then we enter an interactive setup process. 
--- Nonrecoverable errors exit with failure.
 setup :: IO BKConfig
 setup = do
   -- Parse the config file:     
@@ -195,11 +189,6 @@ setup = do
       (\_ -> interactiveSetup Nothing)
       continueSetup
     =<< parseConfigFile
-
-exitFailureWithMsg :: Text -> IO r
-exitFailureWithMsg msg = do
-  Lib.putStrLnStdErr msg
-  exitFailure
 
 -- | Supported configuration files.
 -- These are all stored under the @$CONFIG_DIR/bk@ directory.

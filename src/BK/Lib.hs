@@ -14,7 +14,8 @@ module BK.Lib
     tomlResult,
     concatErrors,
     left,
-    right) where
+    right,
+    exitFailureWithMsg) where
 
 import Data.ByteString      qualified as BS
 import Data.ByteString.Lazy qualified as BL
@@ -32,6 +33,7 @@ import Data.Text.IO           (hPutStrLn)
 import System.IO              (stderr, 
                                stdout)
 import Data.Bool (bool)
+import System.Exit (exitFailure)
 
 putStrLnStdErr 
     :: DT.Text 
@@ -67,6 +69,14 @@ lazyByteStringToByteString
     :: BL.ByteString 
     -> BS.ByteString
 lazyByteStringToByteString = BL.toStrict
+
+-- Failure:
+
+exitFailureWithMsg :: DT.Text -> IO r
+exitFailureWithMsg msg = do
+  putStrLnStdErr msg
+  exitFailure
+
 
 -- File System:
 

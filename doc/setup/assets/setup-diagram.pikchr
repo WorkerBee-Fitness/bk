@@ -1,0 +1,194 @@
+# ══════════════════════════════════════════════════════════
+#  bk · setup flowchart
+#
+#  Box styles by sigil (matching the ASCII source):
+#    plain box       →  procedure  (| name |)
+#    dashed box      →  data flow  (unboxed text)
+#    fill mistyrose  →  error      (! msg !)
+#    fill lightcyan  →  prompt     (# msg #)
+#    diamond         →  decision   (? question ?)
+# ══════════════════════════════════════════════════════════
+
+
+Setup: circle "setup" 
+
+DoesConfigFileExist: diamond "does config" "file exist?" with .n at Setup.s + (0,-0.5)
+
+arrow from Setup.s to DoesConfigFileExist.n
+
+ValidConfigFile: diamond "valid" "config file?" with .e at DoesConfigFileExist.w + (-0.5,0)
+
+arrow from DoesConfigFileExist.w to ValidConfigFile.e "yes" above
+
+InvalidConfigFile: ellipse "invalid" "config file" with .e at ValidConfigFile.w + (-0.5,0) fill Pink 
+
+arrow from ValidConfigFile.w to InvalidConfigFile.e "no" above
+
+ContinueSetup: box "continueSetup" with .n at ValidConfigFile.s + (0,-0.5)
+
+arrow from ValidConfigFile.s to ContinueSetup.n " contents of" ljust " config file" ljust
+
+GetWorkDir: box "getWorkDir" with .n at ContinueSetup.s + (0,-0.5)
+
+arrow from ContinueSetup.s to GetWorkDir.n
+
+DebugMode: diamond "debug mode?" with .n at GetWorkDir.s + (0,-0.5)
+
+arrow from GetWorkDir.s to DebugMode.n
+
+DebugWorkDirSet: diamond "debug."         \
+                         "work-directory" \
+                         "set?"           \
+                 with .w at DebugMode.e + (0.5,0)
+
+arrow from DebugMode.e to DebugWorkDirSet.w "yes" above
+
+SetWorkDirToDebug: box "set workDir =" "debug." "work-directory" \
+                   with .s at DebugWorkDirSet.n + (0,0.5) \
+                   height + 0.6
+
+arrow from DebugWorkDirSet.n to SetWorkDirToDebug.s " yes" ljust
+
+SetWorkDirToWorkDir: box "set workDir =" "work-directory" \
+                   with .w at DebugWorkDirSet.e + (0.5,0)
+
+arrow from DebugWorkDirSet.e to SetWorkDirToWorkDir.w "no" above 
+
+DoesWorkDirExist: diamond "workDir exist?" \
+                  with .w at SetWorkDirToDebug.e + (0.5,0)
+
+arrow from SetWorkDirToWorkDir.n to DoesWorkDirExist.s
+
+arrow from SetWorkDirToDebug.e              \
+      to DoesWorkDirExist.w
+
+arrow from DebugMode.s \
+      down 0.5 \
+      then right until even with SetWorkDirToWorkDir \
+      then up \
+      to SetWorkDirToWorkDir.s
+
+DebugModeNoLabel: DebugMode.se + (-0.1, -0.4)
+text "no" rjust at DebugModeNoLabel
+
+AlreadySetup: ellipse "return paths" \
+                      "to existing" \
+                      "config file" \
+                      "and" \
+                      "program data" \
+              with .w at DoesWorkDirExist.e + (0.5,0) \
+              wid + 1 \
+              height + 1 \
+              fill LightGreen
+
+arrow from DoesWorkDirExist.e \
+      to   AlreadySetup.w \
+      "yes" above
+
+InteractiveSetup: box "interactiveSetup" \
+                  with .w at DoesConfigFileExist.e + (0.5,0)\
+                  wid + 0.8
+
+arrow from DoesWorkDirExist.n                       \      
+      to InteractiveSetup.s                         \
+      " no" ljust
+
+arrow from DoesConfigFileExist.e \      
+      to InteractiveSetup.w      \
+      "no" above
+
+PromptFirstRun: diamond "> first time" \
+                        "running bk?" \
+                with .w at InteractiveSetup.e + (0.5,0)
+
+arrow from InteractiveSetup.e \
+      to PromptFirstRun.w
+
+GivenConfigFile2: diamond "Config file given?" \
+                  with .w at PromptFirstRun.e + (0.5,0)
+
+GivenConfigFile1: diamond "Config file given?" \
+                  with .n at GivenConfigFile2.s + (0,-0.5)
+
+arrow from PromptFirstRun.s                 \
+      down until even with GivenConfigFile1 \
+      then right                            \
+      to GivenConfigFile1.w                 
+
+PromptForFirstRunNoLabel: PromptFirstRun.se + (-0.1, -0.3)
+text "no" rjust at PromptForFirstRunNoLabel
+
+arrow from PromptFirstRun.e \
+      to GivenConfigFile2.w \
+      "yes" above
+
+ProgramDataInaccessible: ellipse "program data" \
+                                 "is inaccessible" \
+                         with .n at GivenConfigFile1.s  + (0,-0.5) \
+                         fill Pink \
+                         wid + 0.9
+
+ConfigFileInaccessible: ellipse "config file" \
+                                "is inaccessible" \
+                         with .n at ProgramDataInaccessible.s  + (0,-0.25) \
+                         fill Pink \
+                         wid + 0.9
+
+arrow from GivenConfigFile1.s \
+      to ProgramDataInaccessible.n \
+      " yes" ljust
+
+arrow from GivenConfigFile1.e \
+      then right 0.3\
+      then down until even with ConfigFileInaccessible\
+      then left\
+      to ConfigFileInaccessible.e
+
+ConfigFileGiven1NoLabel: GivenConfigFile1.e + (0.2, 0.07)
+text "no" rjust at ConfigFileGiven1NoLabel
+
+PromptForProgramDataDir: box "> directory to"                    \
+                             "store program"                     \
+                             "data?"                             \
+                         with .w at GivenConfigFile2.e + (0.5,0) \
+                         height + 0.8                            \
+                         wid + 0.8
+
+arrow from GivenConfigFile2.e        \
+      to   PromptForProgramDataDir.w \
+      "no" above
+
+PathToCustomProgramDataDir: box "path entered" \
+                            with .s at PromptForProgramDataDir.n + (0,0.5)
+
+DefaultToHomeDir: box "default: '~/.bk/'" \
+                  with .n at PromptForProgramDataDir.s + (0,-0.5)
+
+arrow from PromptForProgramDataDir.n \
+      to   PathToCustomProgramDataDir.s
+
+arrow from PromptForProgramDataDir.s \
+      to   DefaultToHomeDir.n
+
+PromptForShell: box "> which shell"                     \
+                    "to initialize?"                    \
+                with .w at PromptForProgramDataDir.e + (0.5,0) \
+                height + 0.8                            \
+                wid + 0.8
+
+arrow from PathToCustomProgramDataDir.e    \
+      right until even with PromptForShell \
+      then down                            \
+      to PromptForShell.n
+
+arrow from DefaultToHomeDir.e              \
+      right until even with PromptForShell \
+      then up                              \
+      to PromptForShell.s
+
+ValidShellEntered: diamond "valid shell" \
+                           "entered?"    \
+                   with .w at PromptForShell.e + (0.5,0)
+
+arrow from PromptForShell.e \
+      to   ValidShellEntered.w
