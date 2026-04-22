@@ -33,6 +33,7 @@ import System.FilePath        ((</>))
 import System.IO              (stderr 
                               ,stdout)
 import System.Exit             (exitFailure)
+import qualified Data.Text.IO as DT
 
 putStrLnStdErr 
     :: DT.Text 
@@ -95,6 +96,10 @@ class MonadIO m => FileSystemMonad m where
     doesFileExist :: FilePath 
                   -> m Bool
     doesFileExist = liftIO . System.Dir.doesFileExist
+
+    readFile :: FilePath
+             -> m DT.Text
+    readFile = liftIO . DT.readFile
 
 instance FileSystemMonad IO
 

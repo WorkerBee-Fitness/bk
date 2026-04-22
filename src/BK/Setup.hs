@@ -16,7 +16,6 @@ import GHC.Generics           (Generic)
 import Toml.Schema            ((.=))
 
 import Data.Text                qualified as DT
-import Data.Text.IO             qualified as DT
 import System.Environment       qualified as Env
 import System.Console.Haskeline qualified as HL
 import Toml                     qualified as Toml
@@ -59,7 +58,7 @@ parseConfigFile = do
   let pathToConfigFile = homeDir </> ".bk.toml"  
   (Lib.doesFileExist pathToConfigFile) >>= do
     bool (Lib.left $ errorMsg pathToConfigFile) $
-        do configFileT <- DT.readFile $ pathToConfigFile
+        do configFileT <- Lib.readFile $ pathToConfigFile
            let configFile' = Toml.decode configFileT :: Toml.Result String ConfigFile
            Lib.tomlResult configFile' 
             (Lib.left . Lib.concatErrors) 
@@ -80,7 +79,7 @@ _debugSetup = False
 -- Nonrecoverable errors exit with failure.
 --
 -- The complete setup flow is documented in `doc/setup/setup-diagram.svg`.
-                                    
+            
 setup :: IO BKConfig
 setup = do 
   bkConfig <- either 

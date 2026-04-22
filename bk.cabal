@@ -34,6 +34,7 @@ library
       BK.Lib      
   other-modules:
       Paths_bk
+      BK.Test.SetupTest
   autogen-modules:
       Paths_bk
   hs-source-dirs:
