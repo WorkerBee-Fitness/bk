@@ -12,7 +12,6 @@ import Control.Monad.IO.Class (MonadIO(..))
 import System.FilePath        ((</>)
                               ,takeFileName
                               ,splitFileName)
-import System.Exit            (exitFailure)
 import GHC.Generics           (Generic)
 import Toml.Schema            ((.=))
 
@@ -22,6 +21,7 @@ import System.Environment       qualified as Env
 import System.Console.Haskeline qualified as HL
 import Toml                     qualified as Toml
 import Toml.Schema              qualified as Toml
+import Toml.Schema.FromValue    qualified as Toml
 
 -- | * Internal Imports
 import BK.BKMap qualified as BK
@@ -30,32 +30,28 @@ import Data.Bool (bool)
 
 -- * Config File Parser
 
--- | Debugging configuration
-data DebugConfig = DebugConfig {
-  confDebugWorkDirectory :: Maybe FilePath -- ^ Location of testing programming data
-} deriving (Eq, Show, Generic)
-  deriving (Toml.ToValue) via Toml.GenericTomlTable DebugConfig
-
 -- | BK config file format
 data ConfigFile = ConfigFile {
-   confDebug         :: Maybe DebugConfig  -- ^ Hidden debugging options
-  ,confWorkDirectory :: FilePath           -- ^ Location to store program data
+    confWorkDirectory :: FilePath           -- ^ Location to store program data
+   ,confShell         :: Shell              -- ^ Preferred shell
 } deriving (Eq, Show, Generic)
   deriving (Toml.ToValue) via Toml.GenericTomlTable ConfigFile
 
-instance Toml.FromValue DebugConfig where
-  fromValue :: Toml.Value' l -> Toml.Matcher l DebugConfig
-  fromValue = Toml.parseTableFromValue (DebugConfig <$> Toml.optKey "work-directory")
+instance Toml.FromValue Shell where
+  fromValue :: Toml.Value' l -> Toml.Matcher l Shell
+  fromValue (Toml.Text' _ "zsh")  = pure Zsh
+  fromValue (Toml.Text' _ "bash") = pure Bash
+  fromValue (Toml.Text' _ "fish") = pure Fish
+  fromValue v = Toml.typeError "expected a shell" v
 
 instance Toml.FromValue ConfigFile where
   fromValue :: Toml.Value' l -> Toml.Matcher l ConfigFile
-  fromValue = Toml.parseTableFromValue (ConfigFile <$> Toml.optKey "debug"
-                                                   <*> Toml.reqKey "work-directory")
+  fromValue = Toml.parseTableFromValue (ConfigFile <$> Toml.reqKey "work-directory"
+                                                   <*> Toml.reqKey "shell")
 
 instance Toml.ToTable ConfigFile where
   toTable :: ConfigFile -> Toml.Table
-  toTable (ConfigFile Nothing workDir) = Toml.table ["work-directory" .= workDir]
-  toTable (ConfigFile (Just debugConf) workDir) = Toml.table ["debug" .= debugConf, "work-directory" .= workDir]
+  toTable (ConfigFile workDir shell)  = Toml.table ["work-directory" .= workDir, "shell" .= shell]  
 
 parseConfigFile :: IO (Either Text ConfigFile)
 parseConfigFile = do
@@ -83,69 +79,79 @@ _debugSetup = False
 -- then we enter an interactive setup process. 
 -- Nonrecoverable errors exit with failure.
 --
+-- The complete setup flow is documented in `doc/setup/setup-diagram.svg`.
                                     
 setup :: IO BKConfig
-setup = do
-  -- Parse the config file:     
-    either 
-      (\_ -> interactiveSetup Nothing)
-      continueSetup
-    =<< parseConfigFile
+setup = do 
+  bkConfig <- either 
+                (\_ -> interactiveSetup Nothing)
+                continueSetup
+              =<< parseConfigFile    
+  initializeProgramData bkConfig
+  return bkConfig
 
--- | Supported configuration files.
--- These are all stored under the @$CONFIG_DIR/bk@ directory.
-data BKConfig = BKConfig {
-   -- | Path to the configuration directory
+data BKProgramDirFiles = BKProgramDirFiles {
+   -- | Path to the program-data directory
    bkConfigDirectoryPath :: FilePath
-   -- | Path to the booksmarks CSV file.
-  ,bkBookmarksFile :: FilePath
+   -- | Path to the bookmarks CSV file.
+  ,bkConfigBookmarksFile :: FilePath
+} deriving Show
+
+-- | Supported configuration fields specified by the configuration file.
+data BKConfig = BKConfig {
+  bkProgramDirFiles      :: BKProgramDirFiles
+  -- | Preferred shell
+  ,bkConfigShell         :: Shell
 } deriving Show
 
 -- | Returns the absolute paths to the config files.
 bkConfigPaths 
-  :: FilePath          -- ^ Path to the configuration directory
-  -> BKConfig
-bkConfigPaths configDir = BKConfig {
-   bkConfigDirectoryPath = configDir
-  ,bkBookmarksFile       = configDir </> "bookmarks.csv"
+  :: FilePath          -- ^ Path to the program-data directory
+  -> BKProgramDirFiles
+bkConfigPaths configDir = BKProgramDirFiles {
+   bkConfigDirectoryPath  = configDir
+  ,bkConfigBookmarksFile  = configDir </> "bookmarks.csv"
 }
 
 -- | Convenience function for building the path to the bookmarks CSV file.
 getBKBookmarksFilePath 
-  :: FilePath -- ^ Path to the configuration directory
+  :: FilePath -- ^ Path to the program-data directory
   -> FilePath
-getBKBookmarksFilePath = bkBookmarksFile . bkConfigPaths
+getBKBookmarksFilePath = bkConfigBookmarksFile . bkConfigPaths
 
--- | Tests whether all of the configuration files exist in the configuration directory.
+-- | Tests whether all of the configuration files exist in the program-data directory.
 doesProgramDataExist 
-  :: FilePath                       -- ^ Path to the configuration directory
-  -> IO (Either Text BKConfig) -- ^ Absolute paths to all of the configuration files.
+  :: FilePath                       -- ^ Path to the program-data directory
+  -> IO (Either Text BKProgramDirFiles)      -- ^ Absolute paths to all of the configuration files.
 doesProgramDataExist configDir = do
   d <- Lib.doesDirectoryExist configDir  
   if d
-  then do let configFilesPaths = BKConfig { 
+  then do let bkConfig = BKProgramDirFiles { 
                  bkConfigDirectoryPath = configDir
-                ,bkBookmarksFile       = (getBKBookmarksFilePath configDir) 
+                ,bkConfigBookmarksFile       = (getBKBookmarksFilePath configDir) 
               }
-          f2 <- Lib.doesFileExist $ bkBookmarksFile configFilesPaths
+          f2 <- Lib.doesFileExist $ bkConfigBookmarksFile bkConfig
           return $ if f2
-                   then Right $ configFilesPaths
+                   then Right $ bkConfig
                    else Left "missing CSV file"
   else return . Left $ "no such file or directory '"<>DT.pack configDir<>"'"
 
-getWorkDir :: ConfigFile -> FilePath
-getWorkDir (ConfigFile (Just (DebugConfig (Just wd))) _) = wd
-getWorkDir (ConfigFile _ wd) = wd
+-- | Returns the program data directory from the configuration file.
+getWorkDir 
+  :: ConfigFile -- ^ Config file
+  -> FilePath
+getWorkDir (ConfigFile wd _) = wd
 
 -- | Continues the setup to either an interactive setup if this is the first
--- time running @bk@ and initializing the configuration directory, or just
+-- time running @bk@ and initializing the program-data directory, or just
 -- initializing the configuration paths.
 continueSetup 
   :: ConfigFile   -- ^ Configuration file contents
   -> IO BKConfig
 continueSetup configFile = 
         doesProgramDataExist (getWorkDir configFile) 
-          >>= either goInteractive return  
+          >>= either goInteractive 
+                     (return . flip BKConfig (confShell configFile))
   where
     goInteractive errMsg = do
       when _debugSetup (Lib.putStrLnStdErr errMsg)
@@ -211,7 +217,7 @@ promptForShell prefix = do
   where     
     getCurrentShell :: (String,String) -> IO Shell
     getCurrentShell shellEnvar =
-      maybe (exitFailureWithMsg "Aborting setup!\nUnable to determine shell")
+      maybe (Lib.exitFailureWithMsg "Aborting setup!\nUnable to determine shell")
             return 
             $ parseShellEnvar (snd shellEnvar)
 
@@ -236,6 +242,29 @@ parseShellEnvar (takeFileName->"bash") = Just Bash
 parseShellEnvar (takeFileName->"fish") = Just Fish
 parseShellEnvar _                      = Nothing
 
+promptForConfigFile :: Maybe ConfigFile -> HL.InputT IO BKConfig
+promptForConfigFile (Just (ConfigFile wd shell)) = do
+  liftIO . Lib.putStrLnStdOut $ "Found configuration file.\n"
+                             <> "Saving all program data to the path "<>singleQuote (DT.pack wd)<>"\n"
+  return $ BKConfig { 
+       bkProgramDirFiles = bkConfigPaths wd
+      ,bkConfigShell     = shell 
+    }
+promptForConfigFile Nothing = do  
+  homedir <- liftIO $ Lib.getHomeDirectory
+  configDirParent <- promptForFilePath 
+                       "Enter the directory where you would like to store bk's program data?" 
+                       homedir             
+  let _bkProgramDirFiles = bkConfigPaths $ configDirParent 
+                       </> if configDirParent == homedir
+                           then ".bk"
+                           else "bk"
+  shell <- promptForShell "Which shell should be initialized"
+  return $ BKConfig { 
+       bkProgramDirFiles = _bkProgramDirFiles
+      ,bkConfigShell     = shell 
+    } 
+
 -- | Interactive setup that configures @bk@ for the first time.
 interactiveSetup :: Maybe ConfigFile -> IO BKConfig
 interactiveSetup configFileM = HL.runInputT HL.defaultSettings $ loop 
@@ -246,29 +275,10 @@ interactiveSetup configFileM = HL.runInputT HL.defaultSettings $ loop
       liftIO $ Lib.putStrLnStdOut $ "Welcome to the Beekeeper (bk) Interactive Setup!\n"
       promptYesNo 
         "Is this the first time running bk"
-        (liftIO . exitFailureWithMsg $ secondRunMessage (configFileM,configFilePath)) $
+        (liftIO . Lib.exitFailureWithMsg $ secondRunMessage (configFileM,configFilePath)) $
           do liftIO $ Lib.putStrLnStdOut newline
-             -- Split this based on if ConfigFileM is Nothing or Just. 
-             -- 
-             -- If Nothing, then prompt as follows and create a fresh configFile
-             -- and set bkConfigPaths according.
-             -- 
-             -- If Just _, then skip the prompt and report that we are using the
-             -- path from the configuration file. Then set bkConfigPaths based
-             -- on the config file. 
-             --
-             -- Maybe create a promptForConfigFile that returns a BKConfig
-             -- based on the above reasoning. I think this would be cleaner.
-             configDirParent <- promptForFilePath 
-                                  "Enter the directory where you would like to store bk's program data?" 
-                                  homedir             
-             let configFilePaths = bkConfigPaths $ configDirParent 
-                               </> if configDirParent == homedir
-                                   then ".bk"
-                                   else "bk"
-             shell <- promptForShell "Which shell should be initialized"
-             --liftIO $ initializeConfigDir configFilePaths shell
-             return configFilePaths
+             bkConfig <- promptForConfigFile configFileM
+             return bkConfig
   
     secondRunMessage :: (Maybe ConfigFile,FilePath) -> Text
     secondRunMessage (Nothing,configFilePath) = 
@@ -283,29 +293,38 @@ interactiveSetup configFileM = HL.runInputT HL.defaultSettings $ loop
       <> ", because the configuration file "<>singleQuote (DT.pack configFilePath)
       <> " exists."
 
-initializeConfigDir :: BKConfig -> Shell -> IO ()
-initializeConfigDir configFilesPaths sh = do 
-    let configDir = bkConfigDirectoryPath configFilesPaths
-    let csvFile   = bkBookmarksFile       configFilesPaths
+initializeProgramData :: BKConfig -> IO ()
+initializeProgramData (BKConfig programDirFiles@(BKProgramDirFiles configDir csvFile) shell) = do 
     b <- Lib.doesFileExist csvFile
-    when b $ do exitFailureWithMsg $ "Aborting setup!\n"
-                                  <> "It seems bk is already setup, because " 
-                                  <> DT.pack csvFile
-                                  <> " already exists."
+    when b $ do Lib.exitFailureWithMsg $ "Aborting setup!\n"
+                                      <> "It seems bk is already setup, because " 
+                                      <> DT.pack csvFile
+                                      <> " already exists."
     Lib.createDirectoryIfMissing False configDir
-    createCompletionsDir sh 
+    createCompletionsDir shell 
     BK.writeCSVFile csvFile BK.emptyBKMap
   where
     createCompletionsDir Fish = return ()
     createCompletionsDir _sh = do
       homedir <- Lib.getHomeDirectory
-      let path = completionsDirPath homedir configFilesPaths _sh
+      let path = completionsDirPath homedir programDirFiles _sh
       Lib.createDirectoryIfMissing False path
 
 -- | Supported shell initialization.
 data Shell = Zsh 
            | Bash 
            | Fish
+  deriving (Eq, Generic)
+
+instance Toml.ToValue Shell where
+  toValue :: Shell -> Toml.Value
+  toValue = Toml.toValue . show
+
+instance Show Shell where
+  show :: Shell -> String
+  show Zsh  = "zsh"
+  show Bash = "bash"
+  show Fish = "fish"
 
 doubleQuote :: Text -> Text
 doubleQuote t = "\""<>t<>"\""
@@ -326,9 +345,9 @@ exportEnvar :: Shell -> (Text,Text) -> Text
 exportEnvar Fish (var,value) = "set -x "<>var<>space<>doubleQuote value
 exportEnvar _    (var,value) = "export "<>var<>"="<>doubleQuote value
 
-updatePath :: Shell -> Text -> Text
-updatePath Fish dir = "fish_add_path "<>doubleQuote dir
-updatePath sh   dir = exportEnvar sh ("PATH",doubleQuote $ dir<>colon<>"$PATH")
+_updatePath :: Shell -> Text -> Text
+_updatePath Fish dir = "fish_add_path "<>doubleQuote dir
+_updatePath sh   dir = exportEnvar sh ("PATH",doubleQuote $ dir<>colon<>"$PATH")
 
 sourceScript :: Text -> Text
 sourceScript script = "source " <> script
@@ -339,7 +358,7 @@ updateZshFPath (DT.pack->dir) = "fpath=("<>doubleQuote dir<>" $fpath)"
 compinitZsh :: Text
 compinitZsh = "autoload -Uz compinit && compinit"
 
-completionsDirPath :: FilePath -> BKConfig -> Shell -> FilePath
+completionsDirPath :: FilePath -> BKProgramDirFiles -> Shell -> FilePath
 completionsDirPath homedir _ Fish = 
       homedir 
   </> ".config" 
@@ -349,8 +368,8 @@ completionsDirPath _ configPaths _ =
   let configDir = bkConfigDirectoryPath configPaths       
    in configDir </> "completions"
 
-initShellScript :: FilePath -> BKConfig -> Shell -> Text
-initShellScript homedir configPaths = _initShellScript
+_initShellScript :: FilePath -> BKProgramDirFiles -> Shell -> Text
+_initShellScript homedir configPaths = _initShellScript
   where
     configDir = DT.pack $ bkConfigDirectoryPath configPaths     
 
@@ -365,5 +384,6 @@ initShellScript homedir configPaths = _initShellScript
                             <> compinitZsh
     _initShellScript _ = undefined
 
-initShell :: Shell -> BKConfig -> IO ()
-initShell shell configPaths = undefined
+
+--initShell :: Shell -> BKConfig -> IO ()
+--initShell _shell _configPaths = undefined

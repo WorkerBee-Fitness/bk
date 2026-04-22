@@ -28,12 +28,11 @@ import Toml                 qualified as Toml
 
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.List              (isPrefixOf)
-import System.FilePath        ((</>))
 import Data.Text.IO           (hPutStrLn)
-import System.IO              (stderr, 
-                               stdout)
-import Data.Bool (bool)
-import System.Exit (exitFailure)
+import System.FilePath        ((</>))
+import System.IO              (stderr 
+                              ,stdout)
+import System.Exit             (exitFailure)
 
 putStrLnStdErr 
     :: DT.Text 

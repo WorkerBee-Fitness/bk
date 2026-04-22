@@ -28,66 +28,35 @@ ContinueSetup: box "continueSetup" with .n at ValidConfigFile.s + (0,-0.5)
 
 arrow from ValidConfigFile.s to ContinueSetup.n " contents of" ljust " config file" ljust
 
-GetWorkDir: box "getWorkDir" with .n at ContinueSetup.s + (0,-0.5)
+GetWorkDir: box "getWorkDir" \
+            with .n at DoesConfigFileExist.s + (0,-0.5)
 
-arrow from ContinueSetup.s to GetWorkDir.n
+arrow from ContinueSetup.e \
+      to   GetWorkDir.w
 
-DebugMode: diamond "debug mode?" with .n at GetWorkDir.s + (0,-0.5)
-
-arrow from GetWorkDir.s to DebugMode.n
-
-DebugWorkDirSet: diamond "debug."         \
-                         "work-directory" \
-                         "set?"           \
-                 with .w at DebugMode.e + (0.5,0)
-
-arrow from DebugMode.e to DebugWorkDirSet.w "yes" above
-
-SetWorkDirToDebug: box "set workDir =" "debug." "work-directory" \
-                   with .s at DebugWorkDirSet.n + (0,0.5) \
-                   height + 0.6
-
-arrow from DebugWorkDirSet.n to SetWorkDirToDebug.s " yes" ljust
-
-SetWorkDirToWorkDir: box "set workDir =" "work-directory" \
-                   with .w at DebugWorkDirSet.e + (0.5,0)
-
-arrow from DebugWorkDirSet.e to SetWorkDirToWorkDir.w "no" above 
+InteractiveSetup: box "interactiveSetup" \
+                  with .w at DoesConfigFileExist.e + (0.5,0)\
+                  wid + 0.8
 
 DoesWorkDirExist: diamond "workDir exist?" \
-                  with .w at SetWorkDirToDebug.e + (0.5,0)
+                  with .n at InteractiveSetup.s + (0,-0.5)
 
-arrow from SetWorkDirToWorkDir.n to DoesWorkDirExist.s
-
-arrow from SetWorkDirToDebug.e              \
-      to DoesWorkDirExist.w
-
-arrow from DebugMode.s \
-      down 0.5 \
-      then right until even with SetWorkDirToWorkDir \
-      then up \
-      to SetWorkDirToWorkDir.s
-
-DebugModeNoLabel: DebugMode.se + (-0.1, -0.4)
-text "no" rjust at DebugModeNoLabel
+arrow from GetWorkDir.e \
+      to   DoesWorkDirExist.w
 
 AlreadySetup: ellipse "fresh config"                  \
                       "using existing"                \
                       "config file"                   \
                       "and"                           \
                       "program data"                  \
-              with .w at DoesWorkDirExist.e + (0.5,0) \
+              with .n at DoesWorkDirExist.s + (0,-0.5) \
               wid + 1                                 \
               height + 1                              \
               fill LightGreen
 
-arrow from DoesWorkDirExist.e \
-      to   AlreadySetup.w \
-      "yes" above
-
-InteractiveSetup: box "interactiveSetup" \
-                  with .w at DoesConfigFileExist.e + (0.5,0)\
-                  wid + 0.8
+arrow from DoesWorkDirExist.s \
+      to   AlreadySetup.n \
+      " yes" ljust
 
 arrow from DoesWorkDirExist.n                       \      
       to InteractiveSetup.s                         \
