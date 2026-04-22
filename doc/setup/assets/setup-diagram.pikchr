@@ -71,14 +71,14 @@ arrow from DebugMode.s \
 DebugModeNoLabel: DebugMode.se + (-0.1, -0.4)
 text "no" rjust at DebugModeNoLabel
 
-AlreadySetup: ellipse "return paths" \
-                      "to existing" \
-                      "config file" \
-                      "and" \
-                      "program data" \
+AlreadySetup: ellipse "fresh config"                  \
+                      "using existing"                \
+                      "config file"                   \
+                      "and"                           \
+                      "program data"                  \
               with .w at DoesWorkDirExist.e + (0.5,0) \
-              wid + 1 \
-              height + 1 \
+              wid + 1                                 \
+              height + 1                              \
               fill LightGreen
 
 arrow from DoesWorkDirExist.e \
@@ -190,5 +190,45 @@ ValidShellEntered: diamond "valid shell" \
                            "entered?"    \
                    with .w at PromptForShell.e + (0.5,0)
 
-arrow from PromptForShell.e \
+arrow from PromptForShell.e     \      
       to   ValidShellEntered.w
+
+arrow from ValidShellEntered.n \
+      then up 0.2 \
+      then left until even with (PromptForShell.ne.x, PromptForShell.n.y)\
+      then down \
+      to   (PromptForShell.ne.x, PromptForShell.n.y)
+
+ValidShellEnteredNoLabel: ValidShellEntered.n + (0.15, 0.07)
+text "no" rjust at ValidShellEnteredNoLabel
+
+CreateFreshConfig: ellipse "fresh config"                  \
+                           "based on"                      \
+                           "interactive setup"             \
+                  fill LightGreen                          \
+                  height + 0.9                             \
+                  width  + 0.9                             \
+                  with .w at ValidShellEntered.e + (0.5,0)
+
+arrow from ValidShellEntered.e \
+      to   CreateFreshConfig.w \
+      " yes" above
+
+InitializeProgramData: box "initialize"                         \
+                           "program data"                       \
+                       with .w at CreateFreshConfig.e + (0.5,0)
+
+arrow from CreateFreshConfig.e \
+      to   InitializeProgramData.w
+
+SetupComplete: ellipse "setup complete" \
+               with  .s at InitializeProgramData.n + (0,0.5) 
+
+arrow from InitializeProgramData.n \
+      to   SetupComplete.s
+
+arrow from AlreadySetup.s \
+      then down until even with (AlreadySetup.s.x,ConfigFileInaccessible.s.y + -0.2) \
+      then right until even with InitializeProgramData \
+      then up \
+      to   InitializeProgramData.s

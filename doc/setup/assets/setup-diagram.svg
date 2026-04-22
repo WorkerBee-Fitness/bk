@@ -1,4 +1,4 @@
-<svg xmlns='http://www.w3.org/2000/svg' style='font-size:initial;' class="setup diagram" viewBox="0 0 1753.92 799.92">
+<svg xmlns='http://www.w3.org/2000/svg' style='font-size:initial;' class="setup diagram" viewBox="0 0 2145.8 799.92">
 <circle cx="470.16" cy="41.76" r="36"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
 <text x="470.16" y="41.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">setup</text>
 <path d="M398.16,203.76L470.16,257.76L542.16,203.76L470.16,149.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
@@ -62,8 +62,8 @@
 <path d="M254.16,725.76L254.16,797.76L668.16,797.76L668.16,713.52"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(0,0,0);" />
 <text x="275.76" y="756.36" text-anchor="end" fill="rgb(0,0,0)" dominant-baseline="central">no</text>
 <ellipse cx="884.16" cy="502.56" rx="72" ry="72"  style="fill:rgb(144,238,144);stroke-width:2.16;stroke:rgb(0,0,0);" />
-<text x="884.16" y="462.24" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">return paths</text>
-<text x="884.16" y="482.4" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">to existing</text>
+<text x="884.16" y="462.24" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">fresh config</text>
+<text x="884.16" y="482.4" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">using existing</text>
 <text x="884.16" y="502.56" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">config file</text>
 <text x="884.16" y="522.72" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">and</text>
 <text x="884.16" y="542.88" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">program data</text>
@@ -132,4 +132,25 @@
 <text x="1679.76" y="213.84" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">entered?</text>
 <polygon points="1607.76,203.76 1596.24,208.08 1596.24,199.44" style="fill:rgb(0,0,0)"/>
 <path d="M1535.76,203.76L1602,203.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<polygon points="1535.76,146.16 1531.44,134.64 1540.08,134.64" style="fill:rgb(0,0,0)"/>
+<path d="M1679.76,149.76L1679.76,120.96L1535.76,120.96L1535.76,140.4"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(0,0,0);" />
+<text x="1701.36" y="139.68" text-anchor="end" fill="rgb(0,0,0)" dominant-baseline="central">no</text>
+<ellipse cx="1888.56" cy="203.76" rx="64.8" ry="64.8"  style="fill:rgb(144,238,144);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1888.56" y="183.6" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">fresh config</text>
+<text x="1888.56" y="203.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">based on</text>
+<text x="1888.56" y="223.92" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">interactive setup</text>
+<polygon points="1823.76,203.76 1812.24,208.08 1812.24,199.44" style="fill:rgb(0,0,0)"/>
+<path d="M1751.76,203.76L1818,203.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="1787.76" y="192.06" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central"> yes</text>
+<path d="M2025.36,239.76L2133.36,239.76L2133.36,167.76L2025.36,167.76Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="2079.36" y="193.68" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">initialize</text>
+<text x="2079.36" y="213.84" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">program data</text>
+<polygon points="2025.36,203.76 2013.84,208.08 2013.84,199.44" style="fill:rgb(0,0,0)"/>
+<path d="M1953.36,203.76L2019.6,203.76"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<ellipse cx="2079.36" cy="59.76" rx="54" ry="36"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="2079.36" y="59.76" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">setup complete</text>
+<polygon points="2079.36,95.76 2083.68,107.28 2075.04,107.28" style="fill:rgb(0,0,0)"/>
+<path d="M2079.36,167.76L2079.36,101.52"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<polygon points="2079.36,239.76 2083.68,251.28 2075.04,251.28" style="fill:rgb(0,0,0)"/>
+<path d="M884.16,574.56L884.16,718.56L2079.36,718.56L2079.36,245.52"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(0,0,0);" />
 </svg>
